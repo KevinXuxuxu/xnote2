@@ -1,6 +1,8 @@
 use actix_web::{web, HttpResponse, Result};
 use sqlx::PgPool;
 use crate::models::drink::Drink;
+use crate::models::detail::DrinkDetail;
+use crate::models::people::People;
 
 pub fn configure(cfg: &mut web::ServiceConfig) {
     cfg.service(
@@ -13,6 +15,10 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
             .route(web::get().to(get_drink))
             .route(web::put().to(update_drink))
             .route(web::delete().to(delete_drink))
+    )
+    .service(
+        web::resource("/drinks/{id}/details")
+            .route(web::get().to(get_drink_details))
     );
 }
 
@@ -72,4 +78,64 @@ async fn delete_drink(_pool: web::Data<PgPool>, _path: web::Path<i32>) -> Result
     Ok(HttpResponse::Ok().json(serde_json::json!({
         "message": "Delete drink - TODO: implement"
     })))
+}
+
+async fn get_drink_details(pool: web::Data<PgPool>, path: web::Path<i32>) -> Result<HttpResponse> {
+    let drink_id = path.into_inner();
+    
+    // Get drink basic info
+    let drink_query = sqlx::query!(
+        "SELECT id, name, date FROM drink WHERE id = $1",
+        drink_id
+    )
+    .fetch_optional(pool.get_ref())
+    .await;
+
+    let drink = match drink_query {
+        Ok(Some(drink)) => drink,
+        Ok(None) => {
+            return Ok(HttpResponse::NotFound().json(serde_json::json!({
+                "error": "Drink not found"
+            })));
+        }
+        Err(e) => {
+            log::error!("Failed to fetch drink {}: {}", drink_id, e);
+            return Ok(HttpResponse::InternalServerError().json(serde_json::json!({
+                "error": "Failed to fetch drink"
+            })));
+        }
+    };
+
+    // Get people associated with this drink
+    let people_result = sqlx::query_as::<_, People>(
+        r#"
+        SELECT p.id, p.name, p.notes
+        FROM people p
+        JOIN drink_people dp ON p.id = dp.people
+        WHERE dp.drink = $1
+        ORDER BY p.name
+        "#
+    )
+    .bind(drink_id)
+    .fetch_all(pool.get_ref())
+    .await;
+
+    let people = match people_result {
+        Ok(people) => people,
+        Err(e) => {
+            log::error!("Failed to fetch drink people {}: {}", drink_id, e);
+            return Ok(HttpResponse::InternalServerError().json(serde_json::json!({
+                "error": "Failed to fetch drink details"
+            })));
+        }
+    };
+
+    let drink_detail = DrinkDetail {
+        id: drink.id,
+        name: drink.name,
+        date: drink.date,
+        people,
+    };
+
+    Ok(HttpResponse::Ok().json(drink_detail))
 }

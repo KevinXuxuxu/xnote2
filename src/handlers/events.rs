@@ -1,6 +1,8 @@
 use actix_web::{web, HttpResponse, Result};
 use sqlx::PgPool;
 use crate::models::event::Event;
+use crate::models::detail::{EventDetail, ActivityDetail};
+use crate::models::people::People;
 
 pub fn configure(cfg: &mut web::ServiceConfig) {
     cfg.service(
@@ -13,6 +15,10 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
             .route(web::get().to(get_event))
             .route(web::put().to(update_event))
             .route(web::delete().to(delete_event))
+    )
+    .service(
+        web::resource("/events/{id}/details")
+            .route(web::get().to(get_event_details))
     );
 }
 
@@ -72,4 +78,78 @@ async fn delete_event(_pool: web::Data<PgPool>, _path: web::Path<i32>) -> Result
     Ok(HttpResponse::Ok().json(serde_json::json!({
         "message": "Delete event - TODO: implement"
     })))
+}
+
+async fn get_event_details(pool: web::Data<PgPool>, path: web::Path<i32>) -> Result<HttpResponse> {
+    let event_id = path.into_inner();
+    
+    // Get event with activity details in a single query
+    let event_query = sqlx::query!(
+        r#"
+        SELECT 
+            e.id, e.date, e.measure, e.location, e.notes,
+            a.id as activity_id, a.name as activity_name, a.type as activity_type
+        FROM event e
+        JOIN activity a ON e.activity = a.id
+        WHERE e.id = $1
+        "#,
+        event_id
+    )
+    .fetch_optional(pool.get_ref())
+    .await;
+
+    let event_row = match event_query {
+        Ok(Some(event)) => event,
+        Ok(None) => {
+            return Ok(HttpResponse::NotFound().json(serde_json::json!({
+                "error": "Event not found"
+            })));
+        }
+        Err(e) => {
+            log::error!("Failed to fetch event {}: {}", event_id, e);
+            return Ok(HttpResponse::InternalServerError().json(serde_json::json!({
+                "error": "Failed to fetch event"
+            })));
+        }
+    };
+
+    // Get people associated with this event
+    let people_result = sqlx::query_as::<_, People>(
+        r#"
+        SELECT p.id, p.name, p.notes
+        FROM people p
+        JOIN event_people ep ON p.id = ep.people
+        WHERE ep.event = $1
+        ORDER BY p.name
+        "#
+    )
+    .bind(event_id)
+    .fetch_all(pool.get_ref())
+    .await;
+
+    let people = match people_result {
+        Ok(people) => people,
+        Err(e) => {
+            log::error!("Failed to fetch event people {}: {}", event_id, e);
+            return Ok(HttpResponse::InternalServerError().json(serde_json::json!({
+                "error": "Failed to fetch event details"
+            })));
+        }
+    };
+
+    let event_detail = EventDetail {
+        id: event_row.id,
+        date: event_row.date,
+        activity: ActivityDetail {
+            id: event_row.activity_id,
+            name: event_row.activity_name,
+            activity_type: event_row.activity_type,
+        },
+        measure: event_row.measure,
+        location: event_row.location,
+        notes: event_row.notes,
+        people,
+    };
+
+    Ok(HttpResponse::Ok().json(event_detail))
 }

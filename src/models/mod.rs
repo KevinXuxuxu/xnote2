@@ -7,3 +7,4 @@ pub mod product;
 pub mod recipe;
 pub mod activity;
 pub mod drink;
+pub mod detail;
