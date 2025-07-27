@@ -1,0 +1,10 @@
+pub mod meals;
+pub mod events;
+pub mod people;
+pub mod locations;
+pub mod restaurants;
+pub mod drinks;
+pub mod drink_options;
+pub mod recipes;
+pub mod products;
+pub mod activities;
