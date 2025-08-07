@@ -343,4 +343,227 @@ mod tests {
         
         teardown_test_context(ctx).await;
     }
+    
+    #[actix_web::test]
+    #[serial]
+    async fn test_get_meals_list() {
+        let ctx = setup_test_context().await;
+        
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(ctx.pool.clone()))
+                .configure(meals::configure)
+        ).await;
+        
+        let req = test::TestRequest::get()
+            .uri("/meals")
+            .to_request();
+        
+        let resp = test::call_service(&app, req).await;
+        assert!(resp.status().is_success());
+        
+        let body = test::read_body(resp).await;
+        let meals: Vec<xnote::models::meal::Meal> = serde_json::from_slice(&body)
+            .expect("Failed to deserialize meals list");
+            
+        assert_eq!(meals.len(), 3);
+        
+        // Check meals are ordered by date DESC, time
+        assert_eq!(meals[0].time, "breakfast"); // 2024-01-17
+        assert_eq!(meals[1].time, "lunch");     // 2024-01-16
+        assert_eq!(meals[2].time, "dinner");   // 2024-01-15
+        
+        teardown_test_context(ctx).await;
+    }
+    
+    #[actix_web::test]
+    #[serial]
+    async fn test_get_meal_by_id_restaurant() {
+        let ctx = setup_test_context().await;
+        
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(ctx.pool.clone()))
+                .configure(meals::configure)
+        ).await;
+        
+        let req = test::TestRequest::get()
+            .uri(&format!("/meals/{}", ctx.meal1_id))
+            .to_request();
+        
+        let resp = test::call_service(&app, req).await;
+        assert!(resp.status().is_success());
+        
+        let body = test::read_body(resp).await;
+        let meal: xnote::models::meal::Meal = serde_json::from_slice(&body)
+            .expect("Failed to deserialize meal");
+            
+        assert_eq!(meal.id, ctx.meal1_id);
+        assert_eq!(meal.time, "dinner");
+        assert_eq!(meal.notes, Some("Great dinner".to_string()));
+        
+        teardown_test_context(ctx).await;
+    }
+    
+    #[actix_web::test]
+    #[serial]
+    async fn test_get_meal_by_id_recipe() {
+        let ctx = setup_test_context().await;
+        
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(ctx.pool.clone()))
+                .configure(meals::configure)
+        ).await;
+        
+        let req = test::TestRequest::get()
+            .uri(&format!("/meals/{}", ctx.meal2_id))
+            .to_request();
+        
+        let resp = test::call_service(&app, req).await;
+        assert!(resp.status().is_success());
+        
+        let body = test::read_body(resp).await;
+        let meal: xnote::models::meal::Meal = serde_json::from_slice(&body)
+            .expect("Failed to deserialize meal");
+            
+        assert_eq!(meal.id, ctx.meal2_id);
+        assert_eq!(meal.time, "lunch");
+        assert_eq!(meal.notes, None);
+        
+        teardown_test_context(ctx).await;
+    }
+    
+    #[actix_web::test]
+    #[serial]
+    async fn test_get_meal_by_id_product() {
+        let ctx = setup_test_context().await;
+        
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(ctx.pool.clone()))
+                .configure(meals::configure)
+        ).await;
+        
+        let req = test::TestRequest::get()
+            .uri(&format!("/meals/{}", ctx.meal3_id))
+            .to_request();
+        
+        let resp = test::call_service(&app, req).await;
+        assert!(resp.status().is_success());
+        
+        let body = test::read_body(resp).await;
+        let meal: xnote::models::meal::Meal = serde_json::from_slice(&body)
+            .expect("Failed to deserialize meal");
+            
+        assert_eq!(meal.id, ctx.meal3_id);
+        assert_eq!(meal.time, "breakfast");
+        assert_eq!(meal.notes, Some("Quick breakfast".to_string()));
+        
+        teardown_test_context(ctx).await;
+    }
+    
+    #[actix_web::test]
+    #[serial]
+    async fn test_get_meal_by_id_not_found() {
+        let ctx = setup_test_context().await;
+        
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(ctx.pool.clone()))
+                .configure(meals::configure)
+        ).await;
+        
+        let req = test::TestRequest::get()
+            .uri("/meals/99999")
+            .to_request();
+        
+        let resp = test::call_service(&app, req).await;
+        assert_eq!(resp.status(), 404);
+        
+        let body = test::read_body(resp).await;
+        let error_response: serde_json::Value = serde_json::from_slice(&body)
+            .expect("Failed to deserialize error response");
+        assert_eq!(error_response["error"], "Meal not found");
+        
+        teardown_test_context(ctx).await;
+    }
+    
+    #[actix_web::test]
+    #[serial]
+    async fn test_create_meal_placeholder() {
+        let ctx = setup_test_context().await;
+        
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(ctx.pool.clone()))
+                .configure(meals::configure)
+        ).await;
+        
+        let req = test::TestRequest::post()
+            .uri("/meals")
+            .to_request();
+        
+        let resp = test::call_service(&app, req).await;
+        assert_eq!(resp.status(), 201);
+        
+        let body = test::read_body(resp).await;
+        let response: serde_json::Value = serde_json::from_slice(&body)
+            .expect("Failed to deserialize response");
+        assert_eq!(response["message"], "Create meal - TODO: implement");
+        
+        teardown_test_context(ctx).await;
+    }
+    
+    #[actix_web::test]
+    #[serial]
+    async fn test_update_meal_placeholder() {
+        let ctx = setup_test_context().await;
+        
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(ctx.pool.clone()))
+                .configure(meals::configure)
+        ).await;
+        
+        let req = test::TestRequest::put()
+            .uri(&format!("/meals/{}", ctx.meal1_id))
+            .to_request();
+        
+        let resp = test::call_service(&app, req).await;
+        assert!(resp.status().is_success());
+        
+        let body = test::read_body(resp).await;
+        let response: serde_json::Value = serde_json::from_slice(&body)
+            .expect("Failed to deserialize response");
+        assert_eq!(response["message"], "Update meal - TODO: implement");
+        
+        teardown_test_context(ctx).await;
+    }
+    
+    #[actix_web::test]
+    #[serial]
+    async fn test_delete_meal_placeholder() {
+        let ctx = setup_test_context().await;
+        
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(ctx.pool.clone()))
+                .configure(meals::configure)
+        ).await;
+        
+        let req = test::TestRequest::delete()
+            .uri(&format!("/meals/{}", ctx.meal1_id))
+            .to_request();
+        
+        let resp = test::call_service(&app, req).await;
+        assert!(resp.status().is_success());
+        
+        let body = test::read_body(resp).await;
+        let response: serde_json::Value = serde_json::from_slice(&body)
+            .expect("Failed to deserialize response");
+        assert_eq!(response["message"], "Delete meal - TODO: implement");
+        
+        teardown_test_context(ctx).await;
+    }
 }
