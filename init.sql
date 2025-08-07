@@ -195,3 +195,18 @@ INSERT INTO activity_type (name) VALUES ('side project');
 INSERT INTO activity_type (name) VALUES ('study');
 INSERT INTO activity_type (name) VALUES ('entertainment');
 INSERT INTO activity_type (name) VALUES ('transport');
+
+INSERT INTO drink_option (name) VALUES ('Sip House - Ube Latte');
+INSERT INTO drink_option (name) VALUES ('自己做的latte');
+INSERT INTO drink_option (name) VALUES ('吃茶三千');
+INSERT INTO drink_option (name) VALUES ('鲜榨水果汁');
+INSERT INTO drink_option (name) VALUES ('喜茶');
+INSERT INTO drink_option (name) VALUES ('CAN U C');
+INSERT INTO drink_option (name) VALUES ('茶宴');
+INSERT INTO drink_option (name) VALUES ('Our Place');
+INSERT INTO drink_option (name) VALUES ('Sunright');
+INSERT INTO drink_option (name) VALUES ('Phe');
+INSERT INTO drink_option (name) VALUES ('茉莉奶白');
+INSERT INTO drink_option (name) VALUES ('less and more');
+INSERT INTO drink_option (name) VALUES ('aroom');
+INSERT INTO drink_option (name) VALUES ('coffeeholic');
