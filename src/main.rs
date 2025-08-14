@@ -1,4 +1,5 @@
 use actix_web::{web, App, HttpResponse, HttpServer, Result, middleware::Logger};
+use actix_files as fs;
 use sqlx::PgPool;
 use std::env;
 
@@ -11,6 +12,28 @@ async fn health() -> Result<HttpResponse> {
         "status": "healthy",
         "service": "daily-events-service"
     })))
+}
+
+async fn index() -> Result<HttpResponse> {
+    let html = std::fs::read_to_string("static/index.html")
+        .unwrap_or_else(|_| {
+            r#"<!DOCTYPE html>
+<html>
+<head>
+    <title>XNote - Daily Events Tracker</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+    <h1>XNote - Daily Events Tracker</h1>
+    <p>Frontend is being set up...</p>
+</body>
+</html>"#.to_string()
+        });
+    
+    Ok(HttpResponse::Ok()
+        .content_type("text/html; charset=utf-8")
+        .body(html))
 }
 
 #[actix_web::main]
@@ -31,7 +54,9 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .app_data(web::Data::new(pool.clone()))
             .wrap(Logger::default())
+            .route("/", web::get().to(index))
             .route("/health", web::get().to(health))
+            .service(fs::Files::new("/static", "./static").show_files_listing())
             .service(
                 web::scope("/api/v1")
                     .configure(handlers::meals::configure)
