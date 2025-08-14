@@ -69,6 +69,7 @@ async fn main() -> std::io::Result<()> {
                     .configure(handlers::recipes::configure)
                     .configure(handlers::products::configure)
                     .configure(handlers::activities::configure)
+                    .configure(handlers::daily_summary::configure)
             )
     })
     .bind("0.0.0.0:8080")?

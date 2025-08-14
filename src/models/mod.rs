@@ -8,3 +8,4 @@ pub mod recipe;
 pub mod activity;
 pub mod drink;
 pub mod detail;
+pub mod daily_summary;

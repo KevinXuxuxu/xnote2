@@ -8,3 +8,4 @@ pub mod drink_options;
 pub mod recipes;
 pub mod products;
 pub mod activities;
+pub mod daily_summary;

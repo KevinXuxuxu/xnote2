@@ -314,6 +314,25 @@ class ApiClient {
         });
     }
 
+    // Daily Summary API
+    async getDailySummary(startDate = null, endDate = null) {
+        let endpoint = '/daily-summary';
+        const params = new URLSearchParams();
+        
+        if (startDate) {
+            params.append('start_date', startDate);
+        }
+        if (endDate) {
+            params.append('end_date', endDate);
+        }
+        
+        if (params.toString()) {
+            endpoint += '?' + params.toString();
+        }
+        
+        return this.request(endpoint);
+    }
+
     // Utility methods for aggregated data
     async getAllEvents() {
         try {
