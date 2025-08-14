@@ -5,11 +5,11 @@ use serde::{Deserialize, Serialize};
 pub struct DailySummary {
     pub date: NaiveDate,
     pub day_of_week: String,
-    pub breakfast: [String; 2],
-    pub lunch: [String; 2], 
-    pub dinner: [String; 2],
+    pub breakfast: Vec<String>,
+    pub lunch: Vec<String>, 
+    pub dinner: Vec<String>,
     pub drinks: Vec<String>,
-    pub events: [String; 10],
+    pub events: Vec<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

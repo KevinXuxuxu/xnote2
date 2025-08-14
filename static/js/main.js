@@ -39,8 +39,7 @@ function setupFilters() {
     document.getElementById('applyFilters').onclick = () => {
         const filters = {
             startDate: document.getElementById('startDate').value,
-            endDate: document.getElementById('endDate').value,
-            type: document.getElementById('typeFilter').value
+            endDate: document.getElementById('endDate').value
         };
         
         window.eventSpreadsheet.setFilters(filters);
@@ -49,7 +48,6 @@ function setupFilters() {
     // Auto-apply filters when date inputs change
     document.getElementById('startDate').onchange = autoApplyFilters;
     document.getElementById('endDate').onchange = autoApplyFilters;
-    document.getElementById('typeFilter').onchange = autoApplyFilters;
 }
 
 function autoApplyFilters() {

@@ -9,8 +9,7 @@ class EventSpreadsheet {
         this.filteredData = [];
         this.currentFilters = {
             startDate: null,
-            endDate: null,
-            type: ''
+            endDate: null
         };
         
         this.initializeSpreadsheet();
@@ -231,28 +230,9 @@ class EventSpreadsheet {
      * Apply current filters to data
      */
     applyFilters() {
-        let filtered = [...this.data];
-        
         // Date range filtering is now handled by the backend API
-        // We only apply additional client-side filters here if needed
-        
-        // Type filter - filter rows based on whether they have content of specific types
-        if (this.currentFilters.type) {
-            filtered = filtered.filter(row => {
-                switch (this.currentFilters.type) {
-                    case 'meal':
-                        return row.breakfast.some(b => b) || row.lunch.some(l => l) || row.dinner.some(d => d);
-                    case 'event':
-                        return row.events.some(e => e);
-                    case 'drink':
-                        return row.drinks.length > 0;
-                    default:
-                        return true;
-                }
-            });
-        }
-        
-        this.filteredData = filtered;
+        // No additional client-side filtering needed for daily view
+        this.filteredData = [...this.data];
         this.hotInstance.loadData(this.filteredData);
     }
 
