@@ -1,7 +1,7 @@
 use actix_web::{web, HttpResponse, Result};
 use chrono::NaiveDate;
 use sqlx::PgPool;
-use crate::models::daily_summary::{DailySummary, DailySummaryQuery};
+use crate::models::daily_summary::{DailySummary, DailySummaryQuery, MealItem};
 
 pub fn configure(cfg: &mut web::ServiceConfig) {
     cfg.service(
@@ -77,9 +77,9 @@ async fn build_daily_summaries(
                         THEN array_to_string(people_names, ', ') 
                     END,
                     food_source_name,
-                    CASE WHEN meal_type IS NOT NULL AND meal_type != 'cooked' THEN '(' || meal_type || ')' END,
                     CASE WHEN notes IS NOT NULL AND notes != '' THEN '- ' || notes END
-                )) as formatted_meal
+                )) as formatted_meal,
+                meal_type
             FROM meal_aggregated
             WHERE food_source_name IS NOT NULL
         ),
@@ -144,16 +144,16 @@ async fn build_daily_summaries(
                 WHEN EXTRACT(dow FROM dr.date) = 5 THEN 'Friday'
                 WHEN EXTRACT(dow FROM dr.date) = 6 THEN 'Saturday'
             END as day_of_week,
-            COALESCE(breakfast.meals, ARRAY[]::text[]) as "breakfast!",
-            COALESCE(lunch.meals, ARRAY[]::text[]) as "lunch!",
-            COALESCE(dinner.meals, ARRAY[]::text[]) as "dinner!",
+            COALESCE(breakfast.meals, ARRAY[]::json[]) as "breakfast!",
+            COALESCE(lunch.meals, ARRAY[]::json[]) as "lunch!",
+            COALESCE(dinner.meals, ARRAY[]::json[]) as "dinner!",
             COALESCE(drinks.drink_list, ARRAY[]::text[]) as "drinks!",
             COALESCE(events.event_list, ARRAY[]::text[]) as "events!"
         FROM date_range dr
         LEFT JOIN (
             SELECT 
                 date,
-                array_agg(formatted_meal) as meals
+                array_agg(json_build_object('text', formatted_meal, 'type', meal_type)) as meals
             FROM meal_formatted 
             WHERE meal_time = 'breakfast'
             GROUP BY date
@@ -161,7 +161,7 @@ async fn build_daily_summaries(
         LEFT JOIN (
             SELECT 
                 date,
-                array_agg(formatted_meal) as meals
+                array_agg(json_build_object('text', formatted_meal, 'type', meal_type)) as meals
             FROM meal_formatted 
             WHERE meal_time = 'lunch'
             GROUP BY date
@@ -169,7 +169,7 @@ async fn build_daily_summaries(
         LEFT JOIN (
             SELECT 
                 date,
-                array_agg(formatted_meal) as meals
+                array_agg(json_build_object('text', formatted_meal, 'type', meal_type)) as meals
             FROM meal_formatted 
             WHERE meal_time = 'dinner'
             GROUP BY date
@@ -196,14 +196,22 @@ async fn build_daily_summaries(
     .fetch_all(pool)
     .await?;
 
-    let result = summaries.into_iter().map(|row| DailySummary {
-        date: row.date.expect("Date should always be present"),
-        day_of_week: row.day_of_week.unwrap_or_else(|| "Unknown".to_string()),
-        breakfast: row.breakfast,
-        lunch: row.lunch,
-        dinner: row.dinner,
-        drinks: row.drinks,
-        events: row.events,
+    let result = summaries.into_iter().map(|row| {
+        let parse_meals = |meals: Vec<serde_json::Value>| -> Vec<MealItem> {
+            meals.into_iter().filter_map(|meal| {
+                serde_json::from_value(meal).ok()
+            }).collect()
+        };
+
+        DailySummary {
+            date: row.date.expect("Date should always be present"),
+            day_of_week: row.day_of_week.unwrap_or_else(|| "Unknown".to_string()),
+            breakfast: parse_meals(row.breakfast),
+            lunch: parse_meals(row.lunch),
+            dinner: parse_meals(row.dinner),
+            drinks: row.drinks,
+            events: row.events,
+        }
     }).collect();
 
     Ok(result)

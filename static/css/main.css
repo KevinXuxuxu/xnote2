@@ -262,6 +262,48 @@ body {
     flex: 1;
 }
 
+/* Meal type cell styling with high specificity to override Handsontable's htDimmed */
+.ht_master .htCore tbody tr td.htDimmed.meal-type-dine-in {
+    background-color: #fff3e0 !important; /* Orange */
+}
+
+.ht_master .htCore tbody tr td.htDimmed.meal-type-cooked {
+    background-color: #e3f2fd !important; /* Blue */
+}
+
+.ht_master .htCore tbody tr td.htDimmed.meal-type-takeout {
+    background-color: #e8f5e8 !important; /* Green */
+}
+
+.ht_master .htCore tbody tr td.htDimmed.meal-type-manufactured {
+    background-color: #f3e5f5 !important; /* Purple */
+}
+
+.ht_master .htCore tbody tr td.htDimmed.meal-type-leftover {
+    background-color: #f5f5f5 !important; /* Grey */
+}
+
+/* Fallback for non-dimmed cells */
+.ht_master .htCore tbody tr td.meal-type-dine-in {
+    background-color: #fff3e0 !important; /* Orange */
+}
+
+.ht_master .htCore tbody tr td.meal-type-cooked {
+    background-color: #e3f2fd !important; /* Blue */
+}
+
+.ht_master .htCore tbody tr td.meal-type-takeout {
+    background-color: #e8f5e8 !important; /* Green */
+}
+
+.ht_master .htCore tbody tr td.meal-type-manufactured {
+    background-color: #f3e5f5 !important; /* Purple */
+}
+
+.ht_master .htCore tbody tr td.meal-type-leftover {
+    background-color: #f5f5f5 !important; /* Grey */
+}
+
 /* Event type cell styling - works with Handsontable's main theme */
 .ht_master .htCore tbody tr td.event-type-meal {
     background-color: #e8f5e8 !important;

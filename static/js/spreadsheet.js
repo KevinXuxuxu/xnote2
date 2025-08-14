@@ -150,16 +150,35 @@ class EventSpreadsheet {
     }
 
     /**
-     * Custom renderer for meal cells
+     * Custom renderer for meal cells with meal type coloring
      */
     mealRenderer(instance, td, row, col, prop, value, cellProperties) {
         Handsontable.renderers.TextRenderer.apply(this, arguments);
         
+        // Clear existing meal type classes
         td.className = td.className || '';
-        td.className = td.className.replace(/event-type-\w+/g, '');
+        td.className = td.className.replace(/meal-type-\w+/g, '');
         
-        if (value && value.trim()) {
-            td.className += ' event-type-meal';
+        // Get the meal data from the row
+        const rowData = this.filteredData[row];
+        if (!rowData) return;
+        
+        // Extract meal time and index from prop (e.g., "breakfast.0")
+        const [mealTime, indexStr] = prop.split('.');
+        const index = parseInt(indexStr);
+        
+        if (rowData[mealTime] && rowData[mealTime][index]) {
+            const mealItem = rowData[mealTime][index];
+            
+            // Display the text
+            td.textContent = mealItem.text || '';
+            
+            // Add CSS class based on meal type
+            if (mealItem.type) {
+                td.className += ` meal-type-${mealItem.type}`;
+            }
+        } else {
+            td.textContent = '';
         }
     }
 
