@@ -72,9 +72,12 @@ async fn build_daily_summaries(
                 date,
                 meal_time,
                 TRIM(CONCAT_WS(' ',
+                    CASE 
+                        WHEN array_length(people_names, 1) > 0 AND NOT (array_length(people_names, 1) = 2 AND people_names = ARRAY['ww', 'xx']) 
+                        THEN array_to_string(people_names, ', ') 
+                    END,
                     food_source_name,
                     CASE WHEN meal_type IS NOT NULL AND meal_type != 'cooked' THEN '(' || meal_type || ')' END,
-                    CASE WHEN array_length(people_names, 1) > 0 THEN 'with ' || array_to_string(people_names, ', ') END,
                     CASE WHEN notes IS NOT NULL AND notes != '' THEN '- ' || notes END
                 )) as formatted_meal
             FROM meal_aggregated
@@ -99,10 +102,13 @@ async fn build_daily_summaries(
             SELECT 
                 date,
                 TRIM(CONCAT_WS(' ',
+                    CASE 
+                        WHEN array_length(people_names, 1) > 0 AND NOT (array_length(people_names, 1) = 2 AND people_names = ARRAY['ww', 'xx']) 
+                        THEN array_to_string(people_names, ', ') 
+                    END,
                     activity_name,
                     CASE WHEN location IS NOT NULL AND location != '' THEN '@' || location END,
                     CASE WHEN measure IS NOT NULL AND measure != '' THEN 'for ' || measure END,
-                    CASE WHEN array_length(people_names, 1) > 0 THEN 'with ' || array_to_string(people_names, ', ') END,
                     CASE WHEN notes IS NOT NULL AND notes != '' THEN '- ' || notes END
                 )) as formatted_event
             FROM event_aggregated
