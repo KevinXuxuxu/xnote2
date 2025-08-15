@@ -304,6 +304,122 @@ body {
     background-color: #f5f5f5 !important; /* Grey */
 }
 
+/* Date and day highlighting */
+.ht_master .htCore tbody tr td.date-today,
+.ht_master .htCore tbody tr td.day-today {
+    background-color: #c8e6c9 !important; /* Green for today */
+}
+
+.ht_master .htCore tbody tr td.date-saturday,
+.ht_master .htCore tbody tr td.day-saturday {
+    background-color: #fff3e0 !important; /* Light orange for Saturday */
+}
+
+.ht_master .htCore tbody tr td.date-sunday,
+.ht_master .htCore tbody tr td.day-sunday {
+    background-color: #ffcc80 !important; /* Orange for Sunday */
+}
+
+/* Column category borders - thicker borders between sections */
+/* Border after Day column (before breakfast) */
+.ht_master .htCore tbody tr td:nth-child(2) {
+    border-right: 2px solid #000 !important;
+}
+
+/* Border after Breakfast 2 column (before lunch) */
+.ht_master .htCore tbody tr td:nth-child(4) {
+    border-right: 2px solid #000 !important;
+}
+
+/* Border after Lunch 2 column (before dinner) */
+.ht_master .htCore tbody tr td:nth-child(6) {
+    border-right: 2px solid #000 !important;
+}
+
+/* Border after Dinner 2 column (before drinks) */
+.ht_master .htCore tbody tr td:nth-child(8) {
+    border-right: 2px solid #000 !important;
+}
+
+/* Border after Drinks column (before events) */
+.ht_master .htCore tbody tr td:nth-child(9) {
+    border-right: 2px solid #000 !important;
+}
+
+/* Header-specific styles - comprehensive selectors for Handsontable headers */
+/* Border after Day column (before breakfast) */
+.ht_master .htCore thead tr th:nth-child(2),
+.ht_master .htCore .htCore thead tr th:nth-child(2),
+.ht_master .wtHider .wtHolder .wtTable thead tr th:nth-child(2),
+.handsontable .htCore thead tr th:nth-child(2),
+.handsontable thead tr th:nth-child(2),
+.ht_master thead tr th:nth-child(2),
+table.htCore thead tr th:nth-child(2) {
+    border-right: 2px solid #000 !important;
+    text-align: center !important;
+}
+
+/* Border after Breakfast 2 column (before lunch) */
+.ht_master .htCore thead tr th:nth-child(4),
+.ht_master .htCore .htCore thead tr th:nth-child(4),
+.ht_master .wtHider .wtHolder .wtTable thead tr th:nth-child(4),
+.handsontable .htCore thead tr th:nth-child(4),
+.handsontable thead tr th:nth-child(4),
+.ht_master thead tr th:nth-child(4),
+table.htCore thead tr th:nth-child(4) {
+    border-right: 2px solid #000 !important;
+    text-align: center !important;
+}
+
+/* Border after Lunch 2 column (before dinner) */
+.ht_master .htCore thead tr th:nth-child(6),
+.ht_master .htCore .htCore thead tr th:nth-child(6),
+.ht_master .wtHider .wtHolder .wtTable thead tr th:nth-child(6),
+.handsontable .htCore thead tr th:nth-child(6),
+.handsontable thead tr th:nth-child(6),
+.ht_master thead tr th:nth-child(6),
+table.htCore thead tr th:nth-child(6) {
+    border-right: 2px solid #000 !important;
+    text-align: center !important;
+}
+
+/* Border after Dinner 2 column (before drinks) */
+.ht_master .htCore thead tr th:nth-child(8),
+.ht_master .htCore .htCore thead tr th:nth-child(8),
+.ht_master .wtHider .wtHolder .wtTable thead tr th:nth-child(8),
+.handsontable .htCore thead tr th:nth-child(8),
+.handsontable thead tr th:nth-child(8),
+.ht_master thead tr th:nth-child(8),
+table.htCore thead tr th:nth-child(8) {
+    border-right: 2px solid #000 !important;
+    text-align: center !important;
+}
+
+/* Border after Drinks column (before events) */
+.ht_master .htCore thead tr th:nth-child(9),
+.ht_master .htCore .htCore thead tr th:nth-child(9),
+.ht_master .wtHider .wtHolder .wtTable thead tr th:nth-child(9),
+.handsontable .htCore thead tr th:nth-child(9),
+.handsontable thead tr th:nth-child(9),
+.ht_master thead tr th:nth-child(9),
+table.htCore thead tr th:nth-child(9) {
+    border-right: 2px solid #000 !important;
+    text-align: center !important;
+}
+
+/* Center all column headers - comprehensive selectors for all Handsontable structures */
+.ht_master .htCore thead tr th,
+.ht_master .htCore .htCore thead tr th,
+.ht_master .wtHider .wtHolder .wtTable thead tr th,
+.handsontable .htCore thead tr th,
+.handsontable thead tr th,
+.ht_master thead tr th,
+table.htCore thead tr th,
+.handsontable th,
+.ht_master th {
+    text-align: center !important;
+}
+
 /* Activity type cell styling with high specificity to override Handsontable's htDimmed */
 .ht_master .htCore tbody tr td.htDimmed.activity-type-work {
     background-color: #ffebee !important; /* Red */

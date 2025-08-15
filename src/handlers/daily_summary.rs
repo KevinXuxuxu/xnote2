@@ -138,13 +138,13 @@ async fn build_daily_summaries(
         SELECT 
             dr.date,
             CASE 
-                WHEN EXTRACT(dow FROM dr.date) = 0 THEN 'Sunday'
-                WHEN EXTRACT(dow FROM dr.date) = 1 THEN 'Monday'
-                WHEN EXTRACT(dow FROM dr.date) = 2 THEN 'Tuesday'
-                WHEN EXTRACT(dow FROM dr.date) = 3 THEN 'Wednesday'
-                WHEN EXTRACT(dow FROM dr.date) = 4 THEN 'Thursday'
-                WHEN EXTRACT(dow FROM dr.date) = 5 THEN 'Friday'
-                WHEN EXTRACT(dow FROM dr.date) = 6 THEN 'Saturday'
+                WHEN EXTRACT(dow FROM dr.date) = 0 THEN 'Sun'
+                WHEN EXTRACT(dow FROM dr.date) = 1 THEN 'Mon'
+                WHEN EXTRACT(dow FROM dr.date) = 2 THEN 'Tue'
+                WHEN EXTRACT(dow FROM dr.date) = 3 THEN 'Wed'
+                WHEN EXTRACT(dow FROM dr.date) = 4 THEN 'Thu'
+                WHEN EXTRACT(dow FROM dr.date) = 5 THEN 'Fri'
+                WHEN EXTRACT(dow FROM dr.date) = 6 THEN 'Sat'
             END as day_of_week,
             COALESCE(breakfast.meals, ARRAY[]::json[]) as "breakfast!",
             COALESCE(lunch.meals, ARRAY[]::json[]) as "lunch!",

@@ -50,13 +50,15 @@ class EventSpreadsheet {
                     type: 'date',
                     dateFormat: 'YYYY-MM-DD',
                     readOnly: true,
-                    width: 110
+                    width: 110,
+                    renderer: this.dateRenderer.bind(this)
                 },
                 { 
                     data: 'day_of_week',
                     type: 'text',
                     readOnly: true,
-                    width: 80
+                    width: 50,
+                    renderer: this.dayRenderer.bind(this)
                 },
                 { 
                     data: 'breakfast.0',
@@ -147,6 +149,72 @@ class EventSpreadsheet {
 
         this.hotInstance = new Handsontable(container, config);
         this.loadData();
+    }
+
+    /**
+     * Custom renderer for date cells with today/weekend highlighting
+     */
+    dateRenderer(instance, td, row, col, prop, value, cellProperties) {
+        Handsontable.renderers.DateRenderer.apply(this, arguments);
+        
+        if (!value) return;
+        
+        const date = new Date(value);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        date.setHours(0, 0, 0, 0);
+        
+        // Clear existing classes
+        td.className = td.className || '';
+        td.className = td.className.replace(/date-(today|weekend)/g, '');
+        
+        // Check if it's today
+        if (date.getTime() === today.getTime()) {
+            td.className += ' date-today';
+        }
+        // Check if it's weekend
+        else {
+            const dayOfWeek = date.getDay();
+            if (dayOfWeek === 0) { // Sunday
+                td.className += ' date-sunday';
+            } else if (dayOfWeek === 6) { // Saturday
+                td.className += ' date-saturday';
+            }
+        }
+    }
+
+    /**
+     * Custom renderer for day cells with weekend highlighting
+     */
+    dayRenderer(instance, td, row, col, prop, value, cellProperties) {
+        Handsontable.renderers.TextRenderer.apply(this, arguments);
+        
+        // Clear existing classes
+        td.className = td.className || '';
+        td.className = td.className.replace(/day-(today|weekend)/g, '');
+        
+        // Get the corresponding date from the same row
+        const rowData = this.filteredData[row];
+        if (!rowData || !rowData.date) return;
+        
+        const date = new Date(rowData.date);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        date.setHours(0, 0, 0, 0);
+        
+        // Check if it's today
+        if (date.getTime() === today.getTime()) {
+            td.className += ' day-today';
+        }
+        // Check if it's weekend
+        else {
+            const dayOfWeek = date.getDay();
+            if (dayOfWeek === 0) { // Sunday
+                td.className += ' day-sunday';
+            } else if (dayOfWeek === 6) { // Saturday
+                td.className += ' day-saturday';
+            }
+        }
     }
 
     /**
