@@ -9,6 +9,13 @@ pub struct MealItem {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+pub struct EventItem {
+    pub text: String,
+    #[serde(rename = "type")]
+    pub activity_type: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
 pub struct DailySummary {
     pub date: NaiveDate,
     pub day_of_week: String,
@@ -16,7 +23,7 @@ pub struct DailySummary {
     pub lunch: Vec<MealItem>, 
     pub dinner: Vec<MealItem>,
     pub drinks: Vec<String>,
-    pub events: Vec<String>,
+    pub events: Vec<EventItem>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

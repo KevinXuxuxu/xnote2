@@ -198,16 +198,38 @@ class EventSpreadsheet {
     }
 
     /**
-     * Custom renderer for event cells
+     * Custom renderer for event cells with activity type coloring
      */
     eventRenderer(instance, td, row, col, prop, value, cellProperties) {
         Handsontable.renderers.TextRenderer.apply(this, arguments);
         
+        // Clear existing activity type classes
         td.className = td.className || '';
+        td.className = td.className.replace(/activity-type-\w+/g, '');
         td.className = td.className.replace(/event-type-\w+/g, '');
         
-        if (value && value.trim()) {
-            td.className += ' event-type-event';
+        // Get the event data from the row
+        const rowData = this.filteredData[row];
+        if (!rowData) return;
+        
+        // Extract event index from prop (e.g., "events.0")
+        const [, indexStr] = prop.split('.');
+        const index = parseInt(indexStr);
+        
+        if (rowData.events && rowData.events[index]) {
+            const eventItem = rowData.events[index];
+            
+            // Display the text
+            td.textContent = eventItem.text || '';
+            
+            // Add CSS class based on activity type
+            if (eventItem.type) {
+                // Normalize activity type for CSS class (replace spaces with hyphens)
+                const normalizedType = eventItem.type.replace(/\s+/g, '-');
+                td.className += ` activity-type-${normalizedType}`;
+            }
+        } else {
+            td.textContent = '';
         }
     }
 

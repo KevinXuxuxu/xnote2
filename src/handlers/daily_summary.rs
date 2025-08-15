@@ -1,7 +1,7 @@
 use actix_web::{web, HttpResponse, Result};
 use chrono::NaiveDate;
 use sqlx::PgPool;
-use crate::models::daily_summary::{DailySummary, DailySummaryQuery, MealItem};
+use crate::models::daily_summary::{DailySummary, DailySummaryQuery, MealItem, EventItem};
 
 pub fn configure(cfg: &mut web::ServiceConfig) {
     cfg.service(
@@ -87,6 +87,7 @@ async fn build_daily_summaries(
             SELECT 
                 e.date,
                 a.name as activity_name,
+                a.type as activity_type,
                 e.measure,
                 e.location,
                 e.notes,
@@ -96,7 +97,7 @@ async fn build_daily_summaries(
             LEFT JOIN event_people ep ON e.id = ep.event
             LEFT JOIN people pe ON ep.people = pe.id
             WHERE e.date BETWEEN $1 AND $2
-            GROUP BY e.date, e.id, a.name, e.measure, e.location, e.notes
+            GROUP BY e.date, e.id, a.name, a.type, e.measure, e.location, e.notes
         ),
         event_formatted AS (
             SELECT 
@@ -110,7 +111,8 @@ async fn build_daily_summaries(
                     CASE WHEN location IS NOT NULL AND location != '' THEN '@' || location END,
                     CASE WHEN measure IS NOT NULL AND measure != '' THEN 'for ' || measure END,
                     CASE WHEN notes IS NOT NULL AND notes != '' THEN '- ' || notes END
-                )) as formatted_event
+                )) as formatted_event,
+                activity_type
             FROM event_aggregated
         ),
         drink_aggregated AS (
@@ -148,7 +150,7 @@ async fn build_daily_summaries(
             COALESCE(lunch.meals, ARRAY[]::json[]) as "lunch!",
             COALESCE(dinner.meals, ARRAY[]::json[]) as "dinner!",
             COALESCE(drinks.drink_list, ARRAY[]::text[]) as "drinks!",
-            COALESCE(events.event_list, ARRAY[]::text[]) as "events!"
+            COALESCE(events.event_list, ARRAY[]::json[]) as "events!"
         FROM date_range dr
         LEFT JOIN (
             SELECT 
@@ -184,7 +186,7 @@ async fn build_daily_summaries(
         LEFT JOIN (
             SELECT 
                 date,
-                array_agg(formatted_event) as event_list
+                array_agg(json_build_object('text', formatted_event, 'type', activity_type)) as event_list
             FROM event_formatted
             GROUP BY date
         ) events ON dr.date = events.date
@@ -203,6 +205,12 @@ async fn build_daily_summaries(
             }).collect()
         };
 
+        let parse_events = |events: Vec<serde_json::Value>| -> Vec<EventItem> {
+            events.into_iter().filter_map(|event| {
+                serde_json::from_value(event).ok()
+            }).collect()
+        };
+
         DailySummary {
             date: row.date.expect("Date should always be present"),
             day_of_week: row.day_of_week.unwrap_or_else(|| "Unknown".to_string()),
@@ -210,7 +218,7 @@ async fn build_daily_summaries(
             lunch: parse_meals(row.lunch),
             dinner: parse_meals(row.dinner),
             drinks: row.drinks,
-            events: row.events,
+            events: parse_events(row.events),
         }
     }).collect();
 

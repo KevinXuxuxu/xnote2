@@ -304,6 +304,80 @@ body {
     background-color: #f5f5f5 !important; /* Grey */
 }
 
+/* Activity type cell styling with high specificity to override Handsontable's htDimmed */
+.ht_master .htCore tbody tr td.htDimmed.activity-type-work {
+    background-color: #ffebee !important; /* Red */
+}
+
+.ht_master .htCore tbody tr td.htDimmed.activity-type-chore {
+    background-color: #f3e5f5 !important; /* Purple */
+}
+
+.ht_master .htCore tbody tr td.htDimmed.activity-type-entertainment {
+    background-color: #e8f5e8 !important; /* Green */
+}
+
+.ht_master .htCore tbody tr td.htDimmed.activity-type-housekeeping {
+    background-color: #f5f5f5 !important; /* Grey */
+}
+
+.ht_master .htCore tbody tr td.htDimmed.activity-type-side-project {
+    background-color: #fff9c4 !important; /* Yellow */
+}
+
+.ht_master .htCore tbody tr td.htDimmed.activity-type-sport {
+    background-color: #e3f2fd !important; /* Blue */
+}
+
+.ht_master .htCore tbody tr td.htDimmed.activity-type-study {
+    background-color: #fff3e0 !important; /* Orange */
+}
+
+.ht_master .htCore tbody tr td.htDimmed.activity-type-transport {
+    background-color: #38bbc6 !important; /* Teal */
+}
+
+.ht_master .htCore tbody tr td.htDimmed.activity-type-vedio-game {
+    background-color: #c8e6c9 !important; /* Dark green */
+}
+
+/* Fallback for non-dimmed cells */
+.ht_master .htCore tbody tr td.activity-type-work {
+    background-color: #ffebee !important; /* Red */
+}
+
+.ht_master .htCore tbody tr td.activity-type-chore {
+    background-color: #f3e5f5 !important; /* Purple */
+}
+
+.ht_master .htCore tbody tr td.activity-type-entertainment {
+    background-color: #e8f5e8 !important; /* Green */
+}
+
+.ht_master .htCore tbody tr td.activity-type-housekeeping {
+    background-color: #f5f5f5 !important; /* Grey */
+}
+
+.ht_master .htCore tbody tr td.activity-type-side-project {
+    background-color: #fff9c4 !important; /* Yellow */
+}
+
+.ht_master .htCore tbody tr td.activity-type-sport {
+    background-color: #e3f2fd !important; /* Blue */
+}
+
+.ht_master .htCore tbody tr td.activity-type-study {
+    background-color: #fff3e0 !important; /* Orange */
+}
+
+.ht_master .htCore tbody tr td.activity-type-transport {
+    background-color: #e0f2f1 !important; /* Teal */
+}
+
+.ht_master .htCore tbody tr td.activity-type-vedio-game {
+    background-color: #c8e6c9 !important; /* Dark green */
+}
+
 /* Event type cell styling - works with Handsontable's main theme */
 .ht_master .htCore tbody tr td.event-type-meal {
     background-color: #e8f5e8 !important;
