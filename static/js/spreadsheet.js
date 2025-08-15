@@ -50,7 +50,7 @@ class EventSpreadsheet {
                     type: 'date',
                     dateFormat: 'YYYY-MM-DD',
                     readOnly: true,
-                    width: 100
+                    width: 110
                 },
                 { 
                     data: 'day_of_week',
@@ -62,14 +62,14 @@ class EventSpreadsheet {
                     data: 'breakfast.0',
                     type: 'text',
                     readOnly: true,
-                    width: 200,
+                    width: 150,
                     renderer: this.mealRenderer.bind(this)
                 },
                 { 
                     data: 'breakfast.1',
                     type: 'text',
                     readOnly: true,
-                    width: 200,
+                    width: 100,
                     renderer: this.mealRenderer.bind(this)
                 },
                 { 
@@ -115,7 +115,7 @@ class EventSpreadsheet {
                     renderer: this.eventRenderer.bind(this)
                 }))
             ],
-            rowHeaders: true,
+            rowHeaders: false,
             columnSorting: true,
             filters: true,
             dropdownMenu: true,
