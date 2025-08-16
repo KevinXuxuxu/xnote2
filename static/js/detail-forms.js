@@ -13,6 +13,7 @@ class DetailForms {
         this.currentEventId = null;
         this.currentEventType = null;
         this.currentData = null;
+        this.peopleChoices = null; // Store Choices.js instance
         
         this.setupEventListeners();
         this.loadEnumData();
@@ -192,6 +193,9 @@ class DetailForms {
         if (data.food_source) {
             this.renderFoodSourceDetails(data.food_source.type);
         }
+        
+        // Initialize Choices.js for people selector
+        this.initializePeopleSelector();
     }
 
     getFoodSourceMealType() {
@@ -301,6 +305,9 @@ class DetailForms {
                 </div>
             </form>
         `;
+        
+        // Initialize Choices.js for people selector
+        this.initializePeopleSelector();
     }
 
     renderDrinkForm() {
@@ -332,6 +339,9 @@ class DetailForms {
                 </div>
             </form>
         `;
+        
+        // Initialize Choices.js for people selector
+        this.initializePeopleSelector();
     }
 
     renderPeopleOptions(selectedPeople = []) {
@@ -375,10 +385,15 @@ class DetailForms {
             data[key] = value;
         }
         
-        // Handle multiple select for people
-        const peopleSelect = form.querySelector('[name="people"]');
-        if (peopleSelect) {
-            data.people = Array.from(peopleSelect.selectedOptions).map(option => parseInt(option.value));
+        // Handle multiple select for people (using Choices.js)
+        if (this.peopleChoices) {
+            data.people = this.peopleChoices.getValue(true).map(value => parseInt(value));
+        } else {
+            // Fallback for regular select
+            const peopleSelect = form.querySelector('[name="people"]');
+            if (peopleSelect) {
+                data.people = Array.from(peopleSelect.selectedOptions).map(option => parseInt(option.value));
+            }
         }
         
         // Transform data based on event type
@@ -485,7 +500,34 @@ class DetailForms {
         }
     }
 
+    initializePeopleSelector() {
+        // Destroy existing Choices instance if it exists
+        if (this.peopleChoices) {
+            this.peopleChoices.destroy();
+            this.peopleChoices = null;
+        }
+        
+        // Find the people select element in the current form
+        const peopleSelect = this.modalBody.querySelector('select[name="people"]');
+        if (peopleSelect) {
+            this.peopleChoices = new Choices(peopleSelect, {
+                removeItemButton: true,
+                searchEnabled: true,
+                searchPlaceholderValue: 'Search people...',
+                placeholderValue: 'Choose people',
+                noResultsText: 'No people found',
+                itemSelectText: '',
+            });
+        }
+    }
+
     closeModal() {
+        // Destroy Choices instance when closing modal
+        if (this.peopleChoices) {
+            this.peopleChoices.destroy();
+            this.peopleChoices = null;
+        }
+        
         this.modal.style.display = 'none';
         this.currentEventId = null;
         this.currentEventType = null;
