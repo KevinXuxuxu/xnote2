@@ -7,6 +7,7 @@ class DetailForms {
         this.modalTitle = document.getElementById('modalTitle');
         this.modalBody = document.getElementById('modalBody');
         this.saveBtn = document.getElementById('saveBtn');
+        this.saveAndAddBtn = document.getElementById('saveAndAddBtn');
         this.cancelBtn = document.getElementById('cancelBtn');
         this.closeBtn = document.querySelector('.close');
         
@@ -24,7 +25,8 @@ class DetailForms {
     setupEventListeners() {
         this.closeBtn.onclick = () => this.closeModal();
         this.cancelBtn.onclick = () => this.closeModal();
-        this.saveBtn.onclick = () => this.saveChanges();
+        this.saveBtn.onclick = () => this.saveChanges(false);
+        this.saveAndAddBtn.onclick = () => this.saveChanges(true);
         
         // Close modal when clicking outside
         window.onclick = (event) => {
@@ -384,7 +386,7 @@ class DetailForms {
         ).join('');
     }
 
-    async saveChanges() {
+    async saveChanges(addAnother = false) {
         try {
             const formData = this.collectFormData();
             
@@ -396,11 +398,17 @@ class DetailForms {
                 await this.createEvent(formData);
             }
             
-            this.closeModal();
-            
             // Refresh the spreadsheet
             if (window.eventSpreadsheet) {
                 window.eventSpreadsheet.refresh();
+            }
+            
+            if (addAnother) {
+                // Keep modal open and reset to new form of same type
+                this.openDetails(null, this.currentEventType);
+            } else {
+                // Close modal as usual
+                this.closeModal();
             }
             
         } catch (error) {

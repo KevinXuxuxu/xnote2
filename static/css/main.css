@@ -192,6 +192,10 @@ body {
     background-color: #f8f9fa;
 }
 
+#saveAndAddBtn {
+    margin-right: 1rem;
+}
+
 /* Loading overlay */
 .loading-overlay {
     display: none;
