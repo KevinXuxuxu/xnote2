@@ -3,9 +3,11 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct MealItem {
-    pub text: String,
+    pub name: String,          // Recipe/product/restaurant name
+    pub people: String,        // Comma-separated people names
+    pub notes: Option<String>, // Notes if any
     #[serde(rename = "type")]
-    pub meal_type: String,
+    pub meal_type: String,     // cooked, dine-in, etc.
 }
 
 #[derive(Debug, Serialize, Deserialize)]

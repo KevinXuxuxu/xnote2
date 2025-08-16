@@ -238,8 +238,24 @@ class EventSpreadsheet {
         if (rowData[mealTime] && rowData[mealTime][index]) {
             const mealItem = rowData[mealTime][index];
             
-            // Display the text
-            td.textContent = mealItem.text || '';
+            // Build display text from structured data
+            let displayText = '';
+            
+            // Add people if present and not the excluded ones
+            if (mealItem.people && mealItem.people.trim() && 
+                !this.isExcludedPeople(mealItem.people)) {
+                displayText += mealItem.people + ' ';
+            }
+            
+            // Add food name
+            displayText += mealItem.name || '';
+            
+            // Add notes if present
+            if (mealItem.notes && mealItem.notes.trim()) {
+                displayText += ' - ' + mealItem.notes;
+            }
+            
+            td.textContent = displayText;
             
             // Add CSS class based on meal type
             if (mealItem.type) {
@@ -248,6 +264,17 @@ class EventSpreadsheet {
         } else {
             td.textContent = '';
         }
+    }
+
+    /**
+     * Check if people should be excluded from display (like xx, ww)
+     */
+    isExcludedPeople(people) {
+        const excluded = ['xx', 'ww'];
+        const peopleList = people.split(',').map(p => p.trim().toLowerCase());
+        return peopleList.length === 2 && 
+               excluded.includes(peopleList[0]) && 
+               excluded.includes(peopleList[1]);
     }
 
     /**
@@ -313,7 +340,9 @@ class EventSpreadsheet {
             const endDate = this.currentFilters.endDate || this.getDefaultEndDate();
             
             const dailySummaries = await apiClient.getDailySummary(startDate, endDate);
-            this.data = dailySummaries;
+            
+            // Post-process data to merge meals with same criteria
+            this.data = this.postProcessMealMerging(dailySummaries);
             this.applyFilters();
             
             this.showLoading(false);
@@ -333,6 +362,81 @@ class EventSpreadsheet {
     getDefaultEndDate() {
         return new Date().toISOString().split('T')[0];
     }
+
+    /**
+     * Post-process daily summaries to merge meals with same criteria
+     * Merges meals with same date, time, meal_type, and source type
+     */
+    postProcessMealMerging(dailySummaries) {
+        return dailySummaries.map(day => {
+            const processedDay = { ...day };
+            
+            // Process each meal time (breakfast, lunch, dinner)
+            ['breakfast', 'lunch', 'dinner'].forEach(mealTime => {
+                if (day[mealTime] && day[mealTime].length > 0) {
+                    processedDay[mealTime] = this.mergeMealsByType(day[mealTime]);
+                }
+            });
+            
+            return processedDay;
+        });
+    }
+
+    /**
+     * Merge meals of the same type and source
+     * Groups by meal_type AND all other attributes (people, notes) and merges names with commas
+     */
+    mergeMealsByType(meals) {
+        // Group meals by ALL attributes except the food name
+        const grouped = meals.reduce((groups, meal) => {
+            // Create a key that includes everything except the food name
+            const key = `${meal.type || 'unknown'}|${meal.people || ''}|${meal.notes || ''}`;
+            
+            if (!groups[key]) {
+                groups[key] = [];
+            }
+            groups[key].push(meal);
+            return groups;
+        }, {});
+
+        // Merge meals within each group
+        const merged = [];
+        
+        Object.keys(grouped).forEach(groupKey => {
+            const mealsInGroup = grouped[groupKey];
+            
+            if (mealsInGroup.length === 1) {
+                // Single meal, no merging needed
+                merged.push(mealsInGroup[0]);
+            } else {
+                // Multiple meals with identical attributes, merge their food names
+                const mergedMeal = this.mergeMealGroup(mealsInGroup);
+                merged.push(mergedMeal);
+            }
+        });
+
+        return merged;
+    }
+
+    /**
+     * Merge a group of meals with identical attributes (people, notes, type)
+     */
+    mergeMealGroup(meals) {
+        // All meals in this group have identical people, notes, and type
+        // Just extract food names and combine them
+        const foodNames = meals.map(meal => meal.name).filter(name => name.length > 0);
+
+        // Use the first meal as template since all attributes should be identical
+        const template = meals[0];
+        
+        return {
+            name: foodNames.join(', '),  // Combine food names with commas
+            people: template.people,     // Same people for all in group
+            notes: template.notes,       // Same notes for all in group
+            type: template.type          // Same type for all in group
+        };
+    }
+
 
 
     /**

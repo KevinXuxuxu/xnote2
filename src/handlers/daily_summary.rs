@@ -67,22 +67,6 @@ async fn build_daily_summaries(
             WHERE m.date BETWEEN $1 AND $2
             GROUP BY m.date, m."time", m.id, food_source_name, meal_type, m.notes
         ),
-        meal_formatted AS (
-            SELECT 
-                date,
-                meal_time,
-                TRIM(CONCAT_WS(' ',
-                    CASE 
-                        WHEN array_length(people_names, 1) > 0 AND NOT (array_length(people_names, 1) = 2 AND people_names = ARRAY['ww', 'xx']) 
-                        THEN array_to_string(people_names, ', ') 
-                    END,
-                    food_source_name,
-                    CASE WHEN notes IS NOT NULL AND notes != '' THEN '- ' || notes END
-                )) as formatted_meal,
-                meal_type
-            FROM meal_aggregated
-            WHERE food_source_name IS NOT NULL
-        ),
         event_aggregated AS (
             SELECT 
                 e.date,
@@ -155,25 +139,40 @@ async fn build_daily_summaries(
         LEFT JOIN (
             SELECT 
                 date,
-                array_agg(json_build_object('text', formatted_meal, 'type', meal_type)) as meals
-            FROM meal_formatted 
-            WHERE meal_time = 'breakfast'
+                array_agg(json_build_object(
+                    'name', food_source_name,
+                    'people', COALESCE(array_to_string(people_names, ', '), ''),
+                    'notes', notes,
+                    'type', meal_type
+                )) as meals
+            FROM meal_aggregated 
+            WHERE meal_time = 'breakfast' AND food_source_name IS NOT NULL
             GROUP BY date
         ) breakfast ON dr.date = breakfast.date
         LEFT JOIN (
             SELECT 
                 date,
-                array_agg(json_build_object('text', formatted_meal, 'type', meal_type)) as meals
-            FROM meal_formatted 
-            WHERE meal_time = 'lunch'
+                array_agg(json_build_object(
+                    'name', food_source_name,
+                    'people', COALESCE(array_to_string(people_names, ', '), ''),
+                    'notes', notes,
+                    'type', meal_type
+                )) as meals
+            FROM meal_aggregated 
+            WHERE meal_time = 'lunch' AND food_source_name IS NOT NULL
             GROUP BY date
         ) lunch ON dr.date = lunch.date
         LEFT JOIN (
             SELECT 
                 date,
-                array_agg(json_build_object('text', formatted_meal, 'type', meal_type)) as meals
-            FROM meal_formatted 
-            WHERE meal_time = 'dinner'
+                array_agg(json_build_object(
+                    'name', food_source_name,
+                    'people', COALESCE(array_to_string(people_names, ', '), ''),
+                    'notes', notes,
+                    'type', meal_type
+                )) as meals
+            FROM meal_aggregated 
+            WHERE meal_time = 'dinner' AND food_source_name IS NOT NULL
             GROUP BY date
         ) dinner ON dr.date = dinner.date
         LEFT JOIN (
