@@ -157,13 +157,21 @@ class DetailForms {
                 </div>
                 
                 <div class="form-group">
-                    <label for="foodSource">Food Source</label>
-                    <select id="foodSourceType" name="foodSourceType">
-                        <option value="">Select food source type</option>
-                        <option value="recipe" ${data.food_source?.type === 'recipe' ? 'selected' : ''}>Recipe</option>
-                        <option value="product" ${data.food_source?.type === 'product' ? 'selected' : ''}>Product</option>
-                        <option value="restaurant" ${data.food_source?.type === 'restaurant' ? 'selected' : ''}>Restaurant</option>
-                    </select>
+                    <label>Food Source</label>
+                    <div class="choice-list">
+                        <label class="choice-option">
+                            <input type="radio" name="foodSourceType" value="recipe" ${data.food_source?.type === 'recipe' ? 'checked' : ''} required>
+                            <span class="choice-label">Recipe</span>
+                        </label>
+                        <label class="choice-option">
+                            <input type="radio" name="foodSourceType" value="product" ${data.food_source?.type === 'product' ? 'checked' : ''} required>
+                            <span class="choice-label">Product</span>
+                        </label>
+                        <label class="choice-option">
+                            <input type="radio" name="foodSourceType" value="restaurant" ${data.food_source?.type === 'restaurant' ? 'checked' : ''} required>
+                            <span class="choice-label">Restaurant</span>
+                        </label>
+                    </div>
                 </div>
                 
                 <div id="foodSourceDetails"></div>
@@ -209,9 +217,14 @@ class DetailForms {
         `;
         
         // Setup food source type change handler
-        document.getElementById('foodSourceType').onchange = (e) => {
-            this.renderFoodSourceDetails(e.target.value);
-        };
+        const foodSourceRadios = this.modalBody.querySelectorAll('input[name="foodSourceType"]');
+        foodSourceRadios.forEach(radio => {
+            radio.onchange = (e) => {
+                if (e.target.checked) {
+                    this.renderFoodSourceDetails(e.target.value);
+                }
+            };
+        });
         
         // Render initial food source details
         if (data.food_source) {
