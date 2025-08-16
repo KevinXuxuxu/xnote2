@@ -13,7 +13,7 @@ class DetailForms {
         this.currentEventId = null;
         this.currentEventType = null;
         this.currentData = null;
-        this.peopleChoices = null; // Store Choices.js instance
+        this.peopleChoices = null; // Store Choices.js instance for people
         
         this.setupEventListeners();
         this.loadEnumData();
@@ -138,12 +138,21 @@ class DetailForms {
                         <input type="date" id="mealDate" name="date" value="${data.date || ''}" required>
                     </div>
                     <div class="form-group">
-                        <label for="mealTime">Meal Time</label>
-                        <select id="mealTime" name="time" required>
-                            <option value="breakfast" ${data.time === 'breakfast' ? 'selected' : ''}>Breakfast</option>
-                            <option value="lunch" ${data.time === 'lunch' ? 'selected' : ''}>Lunch</option>
-                            <option value="dinner" ${data.time === 'dinner' ? 'selected' : ''}>Dinner</option>
-                        </select>
+                        <label>Meal Time</label>
+                        <div class="choice-list">
+                            <label class="choice-option">
+                                <input type="radio" name="time" value="breakfast" ${data.time === 'breakfast' ? 'checked' : ''} required>
+                                <span class="choice-label">Breakfast</span>
+                            </label>
+                            <label class="choice-option">
+                                <input type="radio" name="time" value="lunch" ${data.time === 'lunch' ? 'checked' : ''} required>
+                                <span class="choice-label">Lunch</span>
+                            </label>
+                            <label class="choice-option">
+                                <input type="radio" name="time" value="dinner" ${data.time === 'dinner' ? 'checked' : ''} required>
+                                <span class="choice-label">Dinner</span>
+                            </label>
+                        </div>
                     </div>
                 </div>
                 
@@ -160,14 +169,29 @@ class DetailForms {
                 <div id="foodSourceDetails"></div>
                 
                 <div class="form-group">
-                    <label for="mealType">Meal Type</label>
-                    <select id="mealType" name="mealType">
-                        <option value="cooked" ${this.getFoodSourceMealType() === 'cooked' ? 'selected' : ''}>Cooked</option>
-                        <option value="dine-in" ${this.getFoodSourceMealType() === 'dine-in' ? 'selected' : ''}>Dine-in</option>
-                        <option value="takeout" ${this.getFoodSourceMealType() === 'takeout' ? 'selected' : ''}>Takeout</option>
-                        <option value="manufactured" ${this.getFoodSourceMealType() === 'manufactured' ? 'selected' : ''}>Manufactured</option>
-                        <option value="leftover" ${this.getFoodSourceMealType() === 'leftover' ? 'selected' : ''}>Leftover</option>
-                    </select>
+                    <label>Meal Type</label>
+                    <div class="choice-list">
+                        <label class="choice-option">
+                            <input type="radio" name="mealType" value="cooked" ${this.getFoodSourceMealType() === 'cooked' ? 'checked' : ''}>
+                            <span class="choice-label">Cooked</span>
+                        </label>
+                        <label class="choice-option">
+                            <input type="radio" name="mealType" value="dine-in" ${this.getFoodSourceMealType() === 'dine-in' ? 'checked' : ''}>
+                            <span class="choice-label">Dine-in</span>
+                        </label>
+                        <label class="choice-option">
+                            <input type="radio" name="mealType" value="takeout" ${this.getFoodSourceMealType() === 'takeout' ? 'checked' : ''}>
+                            <span class="choice-label">Takeout</span>
+                        </label>
+                        <label class="choice-option">
+                            <input type="radio" name="mealType" value="manufactured" ${this.getFoodSourceMealType() === 'manufactured' ? 'checked' : ''}>
+                            <span class="choice-label">Manufactured</span>
+                        </label>
+                        <label class="choice-option">
+                            <input type="radio" name="mealType" value="leftover" ${this.getFoodSourceMealType() === 'leftover' ? 'checked' : ''}>
+                            <span class="choice-label">Leftover</span>
+                        </label>
+                    </div>
                 </div>
                 
                 <div class="form-group">
@@ -194,8 +218,8 @@ class DetailForms {
             this.renderFoodSourceDetails(data.food_source.type);
         }
         
-        // Initialize Choices.js for people selector
-        this.initializePeopleSelector();
+        // Initialize Choices.js for all selectors
+        this.initializeChoicesSelectors();
     }
 
     getFoodSourceMealType() {
@@ -307,7 +331,7 @@ class DetailForms {
         `;
         
         // Initialize Choices.js for people selector
-        this.initializePeopleSelector();
+        this.initializeChoicesSelectors();
     }
 
     renderDrinkForm() {
@@ -341,7 +365,7 @@ class DetailForms {
         `;
         
         // Initialize Choices.js for people selector
-        this.initializePeopleSelector();
+        this.initializeChoicesSelectors();
     }
 
     renderPeopleOptions(selectedPeople = []) {
@@ -500,14 +524,14 @@ class DetailForms {
         }
     }
 
-    initializePeopleSelector() {
+    initializeChoicesSelectors() {
         // Destroy existing Choices instance if it exists
         if (this.peopleChoices) {
             this.peopleChoices.destroy();
             this.peopleChoices = null;
         }
         
-        // Find the people select element in the current form
+        // Initialize people selector (multi-select with search)
         const peopleSelect = this.modalBody.querySelector('select[name="people"]');
         if (peopleSelect) {
             this.peopleChoices = new Choices(peopleSelect, {

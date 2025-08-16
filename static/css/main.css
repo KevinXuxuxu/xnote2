@@ -503,6 +503,55 @@ table.htCore thead tr th,
     background-color: #fff3e0 !important;
 }
 
+/* Choice list styling for radio button groups */
+.choice-list {
+    display: flex;
+    flex-direction: row;
+    gap: 8px;
+    margin-top: 4px;
+    flex-wrap: wrap;
+}
+
+.choice-option {
+    display: flex;
+    align-items: center;
+    padding: 8px 16px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background-color: #fff;
+    white-space: nowrap;
+    position: relative;
+}
+
+.choice-option:hover {
+    border-color: #007bff;
+    background-color: #f8f9fa;
+}
+
+.choice-option input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.choice-option input[type="radio"]:checked + .choice-label {
+    font-weight: 500;
+    color: #007bff;
+}
+
+.choice-option:has(input[type="radio"]:checked) {
+    border-color: #007bff;
+    background-color: #e3f2fd;
+}
+
+.choice-label {
+    font-size: 0.9rem;
+    user-select: none;
+}
+
 /* Minimal Choices.js styling to match app theme */
 .choices {
     margin-bottom: 0;
