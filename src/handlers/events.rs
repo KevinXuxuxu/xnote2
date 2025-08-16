@@ -1,6 +1,6 @@
 use actix_web::{web, HttpResponse, Result};
 use sqlx::PgPool;
-use crate::models::event::Event;
+use crate::models::event::{Event, CreateEvent, CreateEventResponse};
 use crate::models::detail::{EventDetail, ActivityDetail};
 use crate::models::people::People;
 
@@ -39,10 +39,81 @@ async fn get_events(pool: web::Data<PgPool>) -> Result<HttpResponse> {
     }
 }
 
-async fn create_event(_pool: web::Data<PgPool>) -> Result<HttpResponse> {
-    Ok(HttpResponse::Created().json(serde_json::json!({
-        "message": "Create event - TODO: implement"
-    })))
+async fn create_event(
+    pool: web::Data<PgPool>,
+    event_data: web::Json<CreateEvent>
+) -> Result<HttpResponse> {
+    let mut tx = match pool.begin().await {
+        Ok(tx) => tx,
+        Err(e) => {
+            log::error!("Failed to start transaction: {}", e);
+            return Ok(HttpResponse::InternalServerError().json(serde_json::json!({
+                "error": "Failed to create event"
+            })));
+        }
+    };
+
+    // Insert the event record
+    let event_result = sqlx::query!(
+        r#"
+        INSERT INTO event (date, activity, measure, location, notes)
+        VALUES ($1, $2, $3, $4, $5)
+        RETURNING id
+        "#,
+        event_data.date,
+        event_data.activity_id,
+        event_data.measure,
+        event_data.location,
+        event_data.notes
+    )
+    .fetch_one(&mut *tx)
+    .await;
+
+    let event_id = match event_result {
+        Ok(row) => row.id,
+        Err(e) => {
+            log::error!("Failed to insert event: {}", e);
+            if let Err(rollback_err) = tx.rollback().await {
+                log::error!("Failed to rollback transaction: {}", rollback_err);
+            }
+            return Ok(HttpResponse::InternalServerError().json(serde_json::json!({
+                "error": "Failed to create event"
+            })));
+        }
+    };
+
+    // Insert event-people relationships
+    for person_id in &event_data.people_ids {
+        if let Err(e) = sqlx::query!(
+            "INSERT INTO event_people (event, people) VALUES ($1, $2)",
+            event_id,
+            person_id
+        )
+        .execute(&mut *tx)
+        .await
+        {
+            log::error!("Failed to insert event_people relationship: {}", e);
+            if let Err(rollback_err) = tx.rollback().await {
+                log::error!("Failed to rollback transaction: {}", rollback_err);
+            }
+            return Ok(HttpResponse::InternalServerError().json(serde_json::json!({
+                "error": "Failed to create event"
+            })));
+        }
+    }
+
+    // Commit the transaction
+    if let Err(e) = tx.commit().await {
+        log::error!("Failed to commit transaction: {}", e);
+        return Ok(HttpResponse::InternalServerError().json(serde_json::json!({
+            "error": "Failed to create event"
+        })));
+    }
+
+    Ok(HttpResponse::Created().json(CreateEventResponse {
+        id: event_id,
+        message: "Event created successfully".to_string(),
+    }))
 }
 
 async fn get_event(pool: web::Data<PgPool>, path: web::Path<i32>) -> Result<HttpResponse> {

@@ -15,10 +15,17 @@ pub struct Event {
 #[derive(Debug, Deserialize)]
 pub struct CreateEvent {
     pub date: NaiveDate,
-    pub activity: i32,
+    pub activity_id: i32,
     pub measure: Option<String>,
     pub location: Option<String>,
     pub notes: Option<String>,
+    pub people_ids: Vec<i32>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct CreateEventResponse {
+    pub id: i32,
+    pub message: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, FromRow)]

@@ -15,6 +15,7 @@ class DetailForms {
         this.currentData = null;
         this.peopleChoices = null; // Store Choices.js instance for people
         this.foodSourceChoices = null; // Store Choices.js instance for food sources
+        this.activityChoices = null; // Store Choices.js instance for activities
         
         this.setupEventListeners();
         this.loadEnumData();
@@ -304,30 +305,24 @@ class DetailForms {
                         <input type="date" id="eventDate" name="date" value="${data.date || ''}" required>
                     </div>
                     <div class="form-group">
-                        <label for="eventActivity">Activity</label>
-                        <select id="eventActivity" name="activity" required>
-                            <option value="">Select an activity</option>
-                            ${this.enumData.activities.map(activity => 
-                                `<option value="${activity.id}" ${data.activity?.id === activity.id ? 'selected' : ''}>${activity.name} (${activity.type})</option>`
-                            ).join('')}
-                        </select>
-                    </div>
-                </div>
-                
-                <div class="form-row">
-                    <div class="form-group">
                         <label for="eventMeasure">Measure</label>
                         <input type="text" id="eventMeasure" name="measure" value="${data.measure || ''}" placeholder="e.g., 30 minutes, 5 km">
                     </div>
-                    <div class="form-group">
-                        <label for="eventLocation">Location</label>
-                        <input type="text" id="eventLocation" name="location" value="${data.location || ''}" list="locationsList">
-                        <datalist id="locationsList">
-                            ${this.enumData.locations.map(location => 
-                                `<option value="${location.name}">`
-                            ).join('')}
-                        </datalist>
-                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="eventActivity">Activity</label>
+                    <select id="eventActivity" name="activity" required>
+                        <option value="">Select an activity</option>
+                        ${this.enumData.activities.map(activity => 
+                            `<option value="${activity.id}" ${data.activity?.id === activity.id ? 'selected' : ''}>${activity.name} (${activity.type})</option>`
+                        ).join('')}
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="eventLocation">Location</label>
+                    <input type="text" id="eventLocation" name="location" value="${data.location || ''}" placeholder="Enter location">
                 </div>
                 
                 <div class="form-group">
@@ -344,8 +339,8 @@ class DetailForms {
             </form>
         `;
         
-        // Initialize Choices.js for people selector
-        this.initializeChoicesSelectors();
+        // Initialize Choices.js for all selectors
+        this.initializeEventChoicesSelectors();
     }
 
     renderDrinkForm() {
@@ -433,6 +428,15 @@ class DetailForms {
                 data.people = Array.from(peopleSelect.selectedOptions).map(option => parseInt(option.value));
             }
         }
+        
+        // Handle activity selection (using Choices.js)
+        if (this.activityChoices) {
+            const activityValue = this.activityChoices.getValue(true);
+            if (activityValue) {
+                data.activity = parseInt(activityValue);
+            }
+        }
+        
         
         // Handle multiple select for food sources (using Choices.js)
         if (this.foodSourceChoices) {
@@ -605,6 +609,43 @@ class DetailForms {
         }
     }
 
+    initializeEventChoicesSelectors() {
+        // Destroy existing Choices instances if they exist
+        if (this.peopleChoices) {
+            this.peopleChoices.destroy();
+            this.peopleChoices = null;
+        }
+        if (this.activityChoices) {
+            this.activityChoices.destroy();
+            this.activityChoices = null;
+        }
+        
+        // Initialize people selector (multi-select with search)
+        const peopleSelect = this.modalBody.querySelector('select[name="people"]');
+        if (peopleSelect) {
+            this.peopleChoices = new Choices(peopleSelect, {
+                removeItemButton: true,
+                searchEnabled: true,
+                searchPlaceholderValue: 'Search people...',
+                placeholderValue: 'Choose people',
+                noResultsText: 'No people found',
+                itemSelectText: '',
+            });
+        }
+        
+        // Initialize activity selector (single-select with search)
+        const activitySelect = this.modalBody.querySelector('select[name="activity"]');
+        if (activitySelect) {
+            this.activityChoices = new Choices(activitySelect, {
+                searchEnabled: true,
+                searchPlaceholderValue: 'Search activities...',
+                placeholderValue: 'Choose an activity',
+                noResultsText: 'No activities found',
+                itemSelectText: '',
+            });
+        }
+    }
+
     closeModal() {
         // Destroy Choices instances when closing modal
         if (this.peopleChoices) {
@@ -614,6 +655,10 @@ class DetailForms {
         if (this.foodSourceChoices) {
             this.foodSourceChoices.destroy();
             this.foodSourceChoices = null;
+        }
+        if (this.activityChoices) {
+            this.activityChoices.destroy();
+            this.activityChoices = null;
         }
         
         this.modal.style.display = 'none';
