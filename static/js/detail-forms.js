@@ -34,6 +34,13 @@ class DetailForms {
                 this.closeModal();
             }
         };
+        
+        // Close modal when pressing ESC key
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape' && this.modal.style.display === 'block') {
+                this.closeModal();
+            }
+        });
     }
 
     async loadEnumData() {
