@@ -14,6 +14,7 @@ class DetailForms {
         this.currentEventType = null;
         this.currentData = null;
         this.peopleChoices = null; // Store Choices.js instance for people
+        this.foodSourceChoices = null; // Store Choices.js instance for food sources
         
         this.setupEventListeners();
         this.loadEnumData();
@@ -251,9 +252,8 @@ class DetailForms {
             case 'recipe':
                 container.innerHTML = `
                     <div class="form-group">
-                        <label for="recipeSelect">Recipe</label>
-                        <select id="recipeSelect" name="recipe">
-                            <option value="">Select a recipe</option>
+                        <label for="recipeSelect">Recipes</label>
+                        <select id="recipeSelect" name="recipes" multiple>
                             ${this.enumData.recipes.map(recipe => 
                                 `<option value="${recipe.id}" ${data.food_source?.details?.recipe?.id === recipe.id ? 'selected' : ''}>${recipe.name}</option>`
                             ).join('')}
@@ -264,9 +264,8 @@ class DetailForms {
             case 'product':
                 container.innerHTML = `
                     <div class="form-group">
-                        <label for="productSelect">Product</label>
-                        <select id="productSelect" name="product">
-                            <option value="">Select a product</option>
+                        <label for="productSelect">Products</label>
+                        <select id="productSelect" name="products" multiple>
                             ${this.enumData.products.map(product => 
                                 `<option value="${product.id}" ${data.food_source?.details?.product?.id === product.id ? 'selected' : ''}>${product.name}</option>`
                             ).join('')}
@@ -277,9 +276,8 @@ class DetailForms {
             case 'restaurant':
                 container.innerHTML = `
                     <div class="form-group">
-                        <label for="restaurantSelect">Restaurant</label>
-                        <select id="restaurantSelect" name="restaurant">
-                            <option value="">Select a restaurant</option>
+                        <label for="restaurantSelect">Restaurants</label>
+                        <select id="restaurantSelect" name="restaurants" multiple>
                             ${this.enumData.restaurants.map(restaurant => 
                                 `<option value="${restaurant.id}" ${data.food_source?.details?.restaurant?.id === restaurant.id ? 'selected' : ''}>${restaurant.name}</option>`
                             ).join('')}
@@ -290,6 +288,9 @@ class DetailForms {
             default:
                 container.innerHTML = '';
         }
+        
+        // Initialize Choices.js for the food source detail selector
+        this.initializeFoodSourceChoices();
     }
 
     renderEventForm() {
@@ -433,6 +434,12 @@ class DetailForms {
             }
         }
         
+        // Handle multiple select for food sources (using Choices.js)
+        if (this.foodSourceChoices) {
+            const fieldName = this.foodSourceChoices.passedElement.element.name;
+            data[fieldName] = this.foodSourceChoices.getValue(true).map(value => parseInt(value));
+        }
+        
         // Transform data based on event type
         if (this.currentEventType === 'meal') {
             return this.transformMealData(data);
@@ -446,54 +453,58 @@ class DetailForms {
     }
 
     transformMealData(data) {
-        // console.log('Raw form data:', data);
-        
-        const transformed = {
+        // Base meal data shared by all meals
+        const baseMeal = {
             date: data.date,
             time: data.time,
             notes: data.notes || null,
             people_ids: data.people || []
         };
 
-        // Transform food source based on type
+        // Get food source information
         const foodSourceType = data.foodSourceType;
         const mealType = data.mealType || 'cooked';
-
-        // console.log('Food source type:', foodSourceType);
-        // console.log('Recipe value:', data.recipe);
-        // console.log('Product value:', data.product);
-        // console.log('Restaurant value:', data.restaurant);
-
-        if (foodSourceType === 'recipe' && data.recipe) {
-            transformed.food_source = {
-                type: 'recipe',
-                recipe_id: parseInt(data.recipe),
-                meal_type: mealType
-            };
-        } else if (foodSourceType === 'product' && data.product) {
-            transformed.food_source = {
-                type: 'product',
-                product_id: parseInt(data.product),
-                meal_type: mealType
-            };
-        } else if (foodSourceType === 'restaurant' && data.restaurant) {
-            transformed.food_source = {
-                type: 'restaurant',
-                restaurant_id: parseInt(data.restaurant),
-                meal_type: mealType
-            };
+        
+        // Get the selected food items (recipes, products, or restaurants)
+        let foodItems = [];
+        if (foodSourceType === 'recipe' && data.recipes && data.recipes.length > 0) {
+            foodItems = data.recipes;
+        } else if (foodSourceType === 'product' && data.products && data.products.length > 0) {
+            foodItems = data.products;
+        } else if (foodSourceType === 'restaurant' && data.restaurants && data.restaurants.length > 0) {
+            foodItems = data.restaurants;
         } else {
-            console.error('Food source validation failed:', {
-                foodSourceType,
-                recipe: data.recipe,
-                product: data.product,
-                restaurant: data.restaurant
-            });
-            throw new Error('Please select a food source (recipe, product, or restaurant) and choose a specific item');
+            throw new Error(`Please select at least one ${foodSourceType || 'food item'}`);
         }
 
-        // console.log('Transformed meal data:', transformed);
-        return transformed;
+        // Create multiple meal objects, one for each selected food item
+        const meals = foodItems.map(foodId => {
+            const meal = { ...baseMeal };
+            
+            if (foodSourceType === 'recipe') {
+                meal.food_source = {
+                    type: 'recipe',
+                    recipe_id: parseInt(foodId),
+                    meal_type: mealType
+                };
+            } else if (foodSourceType === 'product') {
+                meal.food_source = {
+                    type: 'product',
+                    product_id: parseInt(foodId),
+                    meal_type: mealType
+                };
+            } else if (foodSourceType === 'restaurant') {
+                meal.food_source = {
+                    type: 'restaurant',
+                    restaurant_id: parseInt(foodId),
+                    meal_type: mealType
+                };
+            }
+            
+            return meal;
+        });
+
+        return meals;
     }
 
     transformEventData(data) {
@@ -518,7 +529,19 @@ class DetailForms {
     async createEvent(formData) {
         switch (this.currentEventType) {
             case 'meal':
-                return await apiClient.createMeal(formData);
+                // Handle multiple meals
+                if (Array.isArray(formData)) {
+                    // Create multiple meals sequentially
+                    const results = [];
+                    for (const meal of formData) {
+                        const result = await apiClient.createMeal(meal);
+                        results.push(result);
+                    }
+                    return results;
+                } else {
+                    // Single meal (fallback)
+                    return await apiClient.createMeal(formData);
+                }
             case 'event':
                 return await apiClient.createEvent(formData);
             case 'drink':
@@ -556,13 +579,41 @@ class DetailForms {
                 itemSelectText: '',
             });
         }
+        
+        // Initialize food source choices if they exist
+        this.initializeFoodSourceChoices();
+    }
+
+    initializeFoodSourceChoices() {
+        // Destroy existing food source choice instance
+        if (this.foodSourceChoices) {
+            this.foodSourceChoices.destroy();
+            this.foodSourceChoices = null;
+        }
+        
+        // Find any food source select element (recipes, products, or restaurants)
+        const foodSourceSelect = this.modalBody.querySelector('select[name="recipes"], select[name="products"], select[name="restaurants"]');
+        if (foodSourceSelect) {
+            this.foodSourceChoices = new Choices(foodSourceSelect, {
+                removeItemButton: true,
+                searchEnabled: true,
+                searchPlaceholderValue: 'Search...',
+                placeholderValue: 'Choose items',
+                noResultsText: 'No items found',
+                itemSelectText: '',
+            });
+        }
     }
 
     closeModal() {
-        // Destroy Choices instance when closing modal
+        // Destroy Choices instances when closing modal
         if (this.peopleChoices) {
             this.peopleChoices.destroy();
             this.peopleChoices = null;
+        }
+        if (this.foodSourceChoices) {
+            this.foodSourceChoices.destroy();
+            this.foodSourceChoices = null;
         }
         
         this.modal.style.display = 'none';
