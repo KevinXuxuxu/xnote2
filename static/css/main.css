@@ -127,7 +127,7 @@ body {
 }
 
 #main-spreadsheet {
-    height: 600px;
+    /* height: calc(100vh-240px) */
 }
 
 /* Modal styles */
