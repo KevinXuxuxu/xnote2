@@ -362,7 +362,7 @@ class DetailForms {
             
         } catch (error) {
             console.error('Failed to save changes:', error);
-            alert('Failed to save changes');
+            alert(`Failed to save changes: ${error.message}`);
         }
     }
 
@@ -381,7 +381,86 @@ class DetailForms {
             data.people = Array.from(peopleSelect.selectedOptions).map(option => parseInt(option.value));
         }
         
+        // Transform data based on event type
+        if (this.currentEventType === 'meal') {
+            return this.transformMealData(data);
+        } else if (this.currentEventType === 'event') {
+            return this.transformEventData(data);
+        } else if (this.currentEventType === 'drink') {
+            return this.transformDrinkData(data);
+        }
+        
         return data;
+    }
+
+    transformMealData(data) {
+        // console.log('Raw form data:', data);
+        
+        const transformed = {
+            date: data.date,
+            time: data.time,
+            notes: data.notes || null,
+            people_ids: data.people || []
+        };
+
+        // Transform food source based on type
+        const foodSourceType = data.foodSourceType;
+        const mealType = data.mealType || 'cooked';
+
+        // console.log('Food source type:', foodSourceType);
+        // console.log('Recipe value:', data.recipe);
+        // console.log('Product value:', data.product);
+        // console.log('Restaurant value:', data.restaurant);
+
+        if (foodSourceType === 'recipe' && data.recipe) {
+            transformed.food_source = {
+                type: 'recipe',
+                recipe_id: parseInt(data.recipe),
+                meal_type: mealType
+            };
+        } else if (foodSourceType === 'product' && data.product) {
+            transformed.food_source = {
+                type: 'product',
+                product_id: parseInt(data.product),
+                meal_type: mealType
+            };
+        } else if (foodSourceType === 'restaurant' && data.restaurant) {
+            transformed.food_source = {
+                type: 'restaurant',
+                restaurant_id: parseInt(data.restaurant),
+                meal_type: mealType
+            };
+        } else {
+            console.error('Food source validation failed:', {
+                foodSourceType,
+                recipe: data.recipe,
+                product: data.product,
+                restaurant: data.restaurant
+            });
+            throw new Error('Please select a food source (recipe, product, or restaurant) and choose a specific item');
+        }
+
+        // console.log('Transformed meal data:', transformed);
+        return transformed;
+    }
+
+    transformEventData(data) {
+        return {
+            date: data.date,
+            activity_id: parseInt(data.activity),
+            measure: data.measure || null,
+            location: data.location || null,
+            notes: data.notes || null,
+            people_ids: data.people || []
+        };
+    }
+
+    transformDrinkData(data) {
+        return {
+            date: data.date,
+            name: data.name,
+            people_ids: data.people || []
+        };
     }
 
     async createEvent(formData) {

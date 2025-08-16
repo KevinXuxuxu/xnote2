@@ -1,6 +1,6 @@
 use actix_web::{web, HttpResponse, Result};
 use sqlx::PgPool;
-use crate::models::meal::Meal;
+use crate::models::meal::{Meal, CreateMeal, CreateMealFoodSource, CreateMealResponse};
 use crate::models::detail::{MealDetail, MealFoodSource};
 use crate::models::{people::People, recipe::Recipe, product::Product, restaurant::Restaurant};
 
@@ -39,10 +39,118 @@ async fn get_meals(pool: web::Data<PgPool>) -> Result<HttpResponse> {
     }
 }
 
-async fn create_meal(_pool: web::Data<PgPool>) -> Result<HttpResponse> {
-    Ok(HttpResponse::Created().json(serde_json::json!({
-        "message": "Create meal - TODO: implement"
-    })))
+async fn create_meal(
+    pool: web::Data<PgPool>, 
+    meal_data: web::Json<CreateMeal>
+) -> Result<HttpResponse> {
+    let mut tx = match pool.begin().await {
+        Ok(tx) => tx,
+        Err(e) => {
+            log::error!("Failed to start transaction: {}", e);
+            return Ok(HttpResponse::InternalServerError().json(serde_json::json!({
+                "error": "Failed to create meal"
+            })));
+        }
+    };
+
+    // Step 1: Insert the main meal record
+    let meal_result = sqlx::query!(
+        r#"INSERT INTO meal (date, "time", notes) VALUES ($1, $2, $3) RETURNING id"#,
+        meal_data.date,
+        meal_data.time,
+        meal_data.notes
+    )
+    .fetch_one(&mut *tx)
+    .await;
+
+    let meal_id = match meal_result {
+        Ok(row) => row.id,
+        Err(e) => {
+            log::error!("Failed to insert meal: {}", e);
+            let _ = tx.rollback().await;
+            return Ok(HttpResponse::InternalServerError().json(serde_json::json!({
+                "error": "Failed to create meal"
+            })));
+        }
+    };  
+
+    // Step 2: Insert food source relationship based on type
+    let food_source_result = match &meal_data.food_source {
+        CreateMealFoodSource::Recipe { recipe_id, meal_type } => {
+            sqlx::query!(
+                "INSERT INTO meal_recipe (meal, recipe, type) VALUES ($1, $2, $3)",
+                meal_id,
+                recipe_id,
+                meal_type
+            )
+            .execute(&mut *tx)
+            .await
+        }
+        CreateMealFoodSource::Product { product_id, meal_type } => {
+            sqlx::query!(
+                "INSERT INTO meal_product (meal, product, type) VALUES ($1, $2, $3)",
+                meal_id,
+                product_id,
+                meal_type
+            )
+            .execute(&mut *tx)
+            .await
+        }
+        CreateMealFoodSource::Restaurant { restaurant_id, meal_type } => {
+            sqlx::query!(
+                "INSERT INTO meal_restaurant (meal, restaurant, type) VALUES ($1, $2, $3)",
+                meal_id,
+                restaurant_id,
+                meal_type
+            )
+            .execute(&mut *tx)
+            .await
+        }
+    };
+
+    if let Err(e) = food_source_result {
+        log::error!("Failed to insert meal food source: {}", e);
+        let _ = tx.rollback().await;
+        return Ok(HttpResponse::InternalServerError().json(serde_json::json!({
+            "error": "Failed to create meal food source"
+        })));
+    }
+
+    // Step 3: Insert people relationships
+    for person_id in &meal_data.people_ids {
+        if let Err(e) = sqlx::query!(
+            "INSERT INTO meal_people (meal, people) VALUES ($1, $2)",
+            meal_id,
+            person_id
+        )
+        .execute(&mut *tx)
+        .await
+        {
+            log::error!("Failed to insert meal people relationship: {}", e);
+            let _ = tx.rollback().await;
+            return Ok(HttpResponse::InternalServerError().json(serde_json::json!({
+                "error": "Failed to create meal people relationships"
+            })));
+        }
+    }
+
+    // Step 4: Commit transaction
+    if let Err(e) = tx.commit().await {
+        log::error!("Failed to commit transaction: {}", e);
+        return Ok(HttpResponse::InternalServerError().json(serde_json::json!({
+            "error": "Failed to create meal"
+        })));
+    }
+
+    // Return the created meal response
+    let response = CreateMealResponse {
+        id: meal_id,
+        date: meal_data.date,
+        time: meal_data.time.clone(),
+        notes: meal_data.notes.clone(),
+    };
+
+    Ok(HttpResponse::Created().json(response))
 }
 
 async fn get_meal(pool: web::Data<PgPool>, path: web::Path<i32>) -> Result<HttpResponse> {

@@ -126,10 +126,6 @@ body {
     overflow: auto;
 }
 
-#main-spreadsheet {
-    /* height: calc(100vh-240px) */
-}
-
 /* Modal styles */
 .modal {
     display: none;
