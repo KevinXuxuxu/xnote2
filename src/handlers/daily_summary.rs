@@ -114,8 +114,11 @@ async fn build_daily_summaries(
             SELECT 
                 date,
                 TRIM(CONCAT_WS(' ',
-                    drink_name,
-                    CASE WHEN array_length(people_names, 1) > 0 THEN 'with ' || array_to_string(people_names, ', ') END
+                    CASE 
+                        WHEN array_length(people_names, 1) > 0 AND NOT (array_length(people_names, 1) = 2 AND people_names = ARRAY['ww', 'xx']) 
+                        THEN array_to_string(people_names, ', ') 
+                    END,
+                    drink_name
                 )) as formatted_drink
             FROM drink_aggregated
         )

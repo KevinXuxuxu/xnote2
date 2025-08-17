@@ -16,8 +16,15 @@ pub struct Drink {
 
 #[derive(Debug, Deserialize)]
 pub struct CreateDrink {
-    pub name: String,
     pub date: NaiveDate,
+    pub name: String,
+    pub people_ids: Vec<i32>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct CreateDrinkResponse {
+    pub id: i32,
+    pub message: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, FromRow)]

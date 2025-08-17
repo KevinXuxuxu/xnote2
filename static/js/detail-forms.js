@@ -17,6 +17,7 @@ class DetailForms {
         this.peopleChoices = null; // Store Choices.js instance for people
         this.foodSourceChoices = null; // Store Choices.js instance for food sources
         this.activityChoices = null; // Store Choices.js instance for activities
+        this.drinkChoices = null; // Store Choices.js instance for drinks
         
         this.setupEventListeners();
         this.loadEnumData();
@@ -357,20 +358,18 @@ class DetailForms {
         
         this.modalBody.innerHTML = `
             <form id="drinkForm">
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="drinkDate">Date</label>
-                        <input type="date" id="drinkDate" name="date" value="${data.date || ''}" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="drinkName">Drink</label>
-                        <select id="drinkName" name="name" required>
-                            <option value="">Select a drink</option>
-                            ${this.enumData.drinkOptions.map(option => 
-                                `<option value="${option.name}" ${data.name === option.name ? 'selected' : ''}>${option.name}</option>`
-                            ).join('')}
-                        </select>
-                    </div>
+                <div class="form-group">
+                    <label for="drinkDate">Date</label>
+                    <input type="date" id="drinkDate" name="date" value="${data.date || ''}" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="drinkName">Drinks</label>
+                    <select id="drinkName" name="drinks" multiple required>
+                        ${this.enumData.drinkOptions.map(option => 
+                            `<option value="${option.name}" ${data.name === option.name ? 'selected' : ''}>${option.name}</option>`
+                        ).join('')}
+                    </select>
                 </div>
                 
                 <div class="form-group">
@@ -382,8 +381,8 @@ class DetailForms {
             </form>
         `;
         
-        // Initialize Choices.js for people selector
-        this.initializeChoicesSelectors();
+        // Initialize Choices.js for drink and people selectors
+        this.initializeDrinkChoicesSelectors();
     }
 
     renderPeopleOptions(selectedPeople = []) {
@@ -452,6 +451,11 @@ class DetailForms {
             }
         }
         
+        
+        // Handle multiple select for drinks (using Choices.js)
+        if (this.drinkChoices) {
+            data.drinks = this.drinkChoices.getValue(true);
+        }
         
         // Handle multiple select for food sources (using Choices.js)
         if (this.foodSourceChoices) {
@@ -538,11 +542,25 @@ class DetailForms {
     }
 
     transformDrinkData(data) {
-        return {
+        // Base drink data shared by all drinks
+        const baseDrink = {
             date: data.date,
-            name: data.name,
             people_ids: data.people || []
         };
+
+        // Get the selected drinks
+        const drinkNames = data.drinks || [];
+        if (drinkNames.length === 0) {
+            throw new Error('Please select at least one drink');
+        }
+
+        // Create multiple drink objects, one for each selected drink
+        const drinks = drinkNames.map(drinkName => ({
+            ...baseDrink,
+            name: drinkName
+        }));
+
+        return drinks;
     }
 
     async createEvent(formData) {
@@ -564,7 +582,19 @@ class DetailForms {
             case 'event':
                 return await apiClient.createEvent(formData);
             case 'drink':
-                return await apiClient.createDrink(formData);
+                // Handle multiple drinks
+                if (Array.isArray(formData)) {
+                    // Create multiple drinks sequentially
+                    const results = [];
+                    for (const drink of formData) {
+                        const result = await apiClient.createDrink(drink);
+                        results.push(result);
+                    }
+                    return results;
+                } else {
+                    // Single drink (fallback)
+                    return await apiClient.createDrink(formData);
+                }
         }
     }
 
@@ -661,6 +691,44 @@ class DetailForms {
         }
     }
 
+    initializeDrinkChoicesSelectors() {
+        // Destroy existing Choices instances if they exist
+        if (this.peopleChoices) {
+            this.peopleChoices.destroy();
+            this.peopleChoices = null;
+        }
+        if (this.drinkChoices) {
+            this.drinkChoices.destroy();
+            this.drinkChoices = null;
+        }
+        
+        // Initialize people selector (multi-select with search)
+        const peopleSelect = this.modalBody.querySelector('select[name="people"]');
+        if (peopleSelect) {
+            this.peopleChoices = new Choices(peopleSelect, {
+                removeItemButton: true,
+                searchEnabled: true,
+                searchPlaceholderValue: 'Search people...',
+                placeholderValue: 'Choose people',
+                noResultsText: 'No people found',
+                itemSelectText: '',
+            });
+        }
+        
+        // Initialize drinks selector (multi-select with search)
+        const drinkSelect = this.modalBody.querySelector('select[name="drinks"]');
+        if (drinkSelect) {
+            this.drinkChoices = new Choices(drinkSelect, {
+                removeItemButton: true,
+                searchEnabled: true,
+                searchPlaceholderValue: 'Search drinks...',
+                placeholderValue: 'Choose drinks',
+                noResultsText: 'No drinks found',
+                itemSelectText: '',
+            });
+        }
+    }
+
     closeModal() {
         // Destroy Choices instances when closing modal
         if (this.peopleChoices) {
@@ -674,6 +742,10 @@ class DetailForms {
         if (this.activityChoices) {
             this.activityChoices.destroy();
             this.activityChoices = null;
+        }
+        if (this.drinkChoices) {
+            this.drinkChoices.destroy();
+            this.drinkChoices = null;
         }
         
         this.modal.style.display = 'none';

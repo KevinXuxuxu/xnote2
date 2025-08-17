@@ -1,6 +1,6 @@
 use actix_web::{web, HttpResponse, Result};
 use sqlx::PgPool;
-use crate::models::drink::Drink;
+use crate::models::drink::{Drink, CreateDrink, CreateDrinkResponse};
 use crate::models::detail::DrinkDetail;
 use crate::models::people::People;
 
@@ -39,10 +39,78 @@ async fn get_drinks(pool: web::Data<PgPool>) -> Result<HttpResponse> {
     }
 }
 
-async fn create_drink(_pool: web::Data<PgPool>) -> Result<HttpResponse> {
-    Ok(HttpResponse::Created().json(serde_json::json!({
-        "message": "Create drink - TODO: implement"
-    })))
+async fn create_drink(
+    pool: web::Data<PgPool>,
+    drink_data: web::Json<CreateDrink>
+) -> Result<HttpResponse> {
+    let mut tx = match pool.begin().await {
+        Ok(tx) => tx,
+        Err(e) => {
+            log::error!("Failed to start transaction: {}", e);
+            return Ok(HttpResponse::InternalServerError().json(serde_json::json!({
+                "error": "Failed to create drink"
+            })));
+        }
+    };
+
+    // Insert the drink record
+    let drink_result = sqlx::query!(
+        r#"
+        INSERT INTO drink (date, name)
+        VALUES ($1, $2)
+        RETURNING id
+        "#,
+        drink_data.date,
+        drink_data.name
+    )
+    .fetch_one(&mut *tx)
+    .await;
+
+    let drink_id = match drink_result {
+        Ok(row) => row.id,
+        Err(e) => {
+            log::error!("Failed to insert drink: {}", e);
+            if let Err(rollback_err) = tx.rollback().await {
+                log::error!("Failed to rollback transaction: {}", rollback_err);
+            }
+            return Ok(HttpResponse::InternalServerError().json(serde_json::json!({
+                "error": "Failed to create drink"
+            })));
+        }
+    };
+
+    // Insert drink-people relationships
+    for person_id in &drink_data.people_ids {
+        if let Err(e) = sqlx::query!(
+            "INSERT INTO drink_people (drink, people) VALUES ($1, $2)",
+            drink_id,
+            person_id
+        )
+        .execute(&mut *tx)
+        .await
+        {
+            log::error!("Failed to insert drink_people relationship: {}", e);
+            if let Err(rollback_err) = tx.rollback().await {
+                log::error!("Failed to rollback transaction: {}", rollback_err);
+            }
+            return Ok(HttpResponse::InternalServerError().json(serde_json::json!({
+                "error": "Failed to create drink"
+            })));
+        }
+    }
+
+    // Commit the transaction
+    if let Err(e) = tx.commit().await {
+        log::error!("Failed to commit transaction: {}", e);
+        return Ok(HttpResponse::InternalServerError().json(serde_json::json!({
+            "error": "Failed to create drink"
+        })));
+    }
+
+    Ok(HttpResponse::Created().json(CreateDrinkResponse {
+        id: drink_id,
+        message: "Drink created successfully".to_string(),
+    }))
 }
 
 async fn get_drink(pool: web::Data<PgPool>, path: web::Path<i32>) -> Result<HttpResponse> {
