@@ -86,21 +86,23 @@ body {
     margin-bottom: 1rem;
     display: flex;
     gap: 1rem;
-    align-items: end;
+    align-items: center;
     flex-wrap: wrap;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 .filter-group {
     display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.5rem;
 }
 
 .filter-group label {
     font-size: 0.85rem;
     font-weight: 500;
     color: #555;
+    white-space: nowrap;
 }
 
 .form-control {

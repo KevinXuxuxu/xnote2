@@ -21,7 +21,7 @@ class EventSpreadsheet {
         const config = {
             data: [],
             licenseKey: 'non-commercial-and-evaluation',
-            height: window.innerHeight - 259,
+            height: window.innerHeight - 234,
             width: '100%',
             colHeaders: [
                 'Date',
