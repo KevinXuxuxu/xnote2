@@ -70,6 +70,7 @@ async fn main() -> std::io::Result<()> {
                     .configure(handlers::products::configure)
                     .configure(handlers::activities::configure)
                     .configure(handlers::daily_summary::configure)
+                    .configure(handlers::food_types::configure)
             )
     })
     .bind("0.0.0.0:8080")?

@@ -296,6 +296,24 @@ class ApiClient {
         });
     }
 
+    // Food Types API (enum-like)
+    async getFoodTypes() {
+        return this.request('/food-types');
+    }
+
+    async createFoodType(foodType) {
+        return this.request('/food-types', {
+            method: 'POST',
+            body: JSON.stringify(foodType)
+        });
+    }
+
+    async deleteFoodType(name) {
+        return this.request(`/food-types/${encodeURIComponent(name)}`, {
+            method: 'DELETE'
+        });
+    }
+
     // Drink Options API (enum-like)
     async getDrinkOptions() {
         return this.request('/drink-options');

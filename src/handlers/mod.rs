@@ -9,3 +9,4 @@ pub mod recipes;
 pub mod products;
 pub mod activities;
 pub mod daily_summary;
+pub mod food_types;
