@@ -69,6 +69,7 @@ async fn main() -> std::io::Result<()> {
                     .configure(handlers::recipes::configure)
                     .configure(handlers::products::configure)
                     .configure(handlers::activities::configure)
+                    .configure(handlers::activity_types::configure)
                     .configure(handlers::daily_summary::configure)
                     .configure(handlers::food_types::configure)
             )

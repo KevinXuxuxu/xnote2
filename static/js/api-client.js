@@ -332,6 +332,24 @@ class ApiClient {
         });
     }
 
+    // Activity Types API (enum-like)
+    async getActivityTypes() {
+        return this.request('/activity-types');
+    }
+
+    async createActivityType(activityType) {
+        return this.request('/activity-types', {
+            method: 'POST',
+            body: JSON.stringify(activityType)
+        });
+    }
+
+    async deleteActivityType(name) {
+        return this.request(`/activity-types/${encodeURIComponent(name)}`, {
+            method: 'DELETE'
+        });
+    }
+
     // Daily Summary API
     async getDailySummary(startDate = null, endDate = null) {
         let endpoint = '/daily-summary';

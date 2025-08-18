@@ -8,5 +8,6 @@ pub mod drink_options;
 pub mod recipes;
 pub mod products;
 pub mod activities;
+pub mod activity_types;
 pub mod daily_summary;
 pub mod food_types;

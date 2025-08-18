@@ -21,3 +21,10 @@ pub struct CreateActivity {
     #[serde(rename = "type")]
     pub activity_type: String,
 }
+
+#[derive(Debug, Deserialize)]
+pub struct UpdateActivity {
+    pub name: Option<String>,
+    #[serde(rename = "type")]
+    pub activity_type: Option<String>,
+}

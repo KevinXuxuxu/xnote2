@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>XNote - Daily Events Tracker</title>
+    <title>XNote - Activity</title>
     
     <!-- Handsontable CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/handsontable/styles/handsontable.min.css">
@@ -18,44 +18,26 @@
 <body>
     <div class="container">
         <header class="header">
-            <h1>XNote - Daily Events Tracker</h1>
+            <h1>XNote - Activity</h1>
             <div class="controls">
-                <button id="addMealBtn" class="btn btn-primary">Add Meal</button>
-                <button id="addEventBtn" class="btn btn-primary">Add Event</button>
-                <button id="addDrinkBtn" class="btn btn-primary">Add Drink</button>
+                <button id="addActivityBtn" class="btn btn-primary">Add Activity</button>
                 <button id="refreshBtn" class="btn btn-secondary">Refresh</button>
-                <a href="/static/recipe.html" class="btn btn-secondary">Recipe</a>
-                <a href="/static/product.html" class="btn btn-secondary">Product</a>
-                <a href="/static/activity.html" class="btn btn-secondary">Activity</a>
-                <a href="/static/restaurant.html" class="btn btn-secondary">Restaurant</a>
+                <a href="/static/index.html" class="btn btn-secondary">Back to Daily View</a>
             </div>
         </header>
 
         <main class="main-content">
-            <!-- Filter Controls -->
-            <div class="filters">
-                <div class="filter-group">
-                    <label for="startDate">From:</label>
-                    <input type="date" id="startDate" class="form-control">
-                </div>
-                <div class="filter-group">
-                    <label for="endDate">To:</label>
-                    <input type="date" id="endDate" class="form-control">
-                </div>
-                <button id="applyFilters" class="btn btn-secondary">Apply Filters</button>
-            </div>
-
             <!-- Main Spreadsheet -->
             <div id="spreadsheet-container">
-                <div id="main-spreadsheet"></div>
+                <div id="activity-spreadsheet"></div>
             </div>
         </main>
 
-        <!-- Detail Modal -->
-        <div id="detailModal" class="modal">
+        <!-- Activity Modal -->
+        <div id="activityModal" class="modal">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h2 id="modalTitle">Event Details</h2>
+                    <h2 id="modalTitle">Add Activity</h2>
                     <span class="close">&times;</span>
                 </div>
                 <div class="modal-body" id="modalBody">
@@ -84,8 +66,23 @@
     
     <!-- Custom JavaScript -->
     <script src="/static/js/api-client.js"></script>
-    <script src="/static/js/spreadsheet.js"></script>
-    <script src="/static/js/detail-forms.js"></script>
-    <script src="/static/js/main.js"></script>
+    <script src="/static/js/activity-spreadsheet.js"></script>
+    <script src="/static/js/activity-form.js"></script>
+    <script>
+        // Initialize activity spreadsheet and form when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            window.activitySpreadsheet = new ActivitySpreadsheet('activity-spreadsheet');
+            window.activityForm = new ActivityForm();
+            
+            // Setup button event listeners
+            document.getElementById('addActivityBtn').onclick = () => {
+                window.activityForm.openModal();
+            };
+            
+            document.getElementById('refreshBtn').onclick = () => {
+                window.activitySpreadsheet.refresh();
+            };
+        });
+    </script>
 </body>
 </html>

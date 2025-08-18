@@ -148,7 +148,7 @@ body {
     width: 90%;
     max-width: 800px;
     max-height: 90vh;
-    overflow: hidden;
+    overflow: visible;
     display: flex;
     flex-direction: column;
 }
@@ -181,7 +181,7 @@ body {
 
 .modal-body {
     padding: 1rem;
-    overflow-y: auto;
+    overflow: visible;
     flex: 1;
 }
 
