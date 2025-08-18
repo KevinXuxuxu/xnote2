@@ -18,7 +18,7 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
 
 async fn get_restaurants(pool: web::Data<PgPool>) -> Result<HttpResponse> {
     match sqlx::query_as::<_, Restaurant>(
-        "SELECT id, name, location, type, price FROM restaurant ORDER BY name"
+        "SELECT id, name, location, type, price FROM restaurant ORDER BY id"
     )
     .fetch_all(pool.get_ref())
     .await
