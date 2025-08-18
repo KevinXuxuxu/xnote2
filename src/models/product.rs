@@ -11,3 +11,8 @@ pub struct Product {
 pub struct CreateProduct {
     pub name: String,
 }
+
+#[derive(Debug, Deserialize)]
+pub struct UpdateProduct {
+    pub name: Option<String>,
+}
