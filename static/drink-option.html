@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>XNote - Drink Option</title>
+    
+    <!-- Handsontable CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/handsontable/styles/handsontable.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/handsontable/styles/ht-theme-main.min.css">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/static/css/main.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>XNote - Drink Option</h1>
+            <div class="controls">
+                <button id="addDrinkOptionBtn" class="btn btn-primary">Add Drink Option</button>
+                <button id="refreshBtn" class="btn btn-secondary">Refresh</button>
+                <a href="/static/index.html" class="btn btn-secondary">Back to Daily View</a>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <!-- Main Spreadsheet -->
+            <div id="spreadsheet-container">
+                <div id="drink-option-spreadsheet"></div>
+            </div>
+        </main>
+
+        <!-- Drink Option Modal -->
+        <div id="drinkOptionModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 id="modalTitle">Add Drink Option</h2>
+                    <span class="close">&times;</span>
+                </div>
+                <div class="modal-body" id="modalBody">
+                    <!-- Dynamic content will be inserted here -->
+                </div>
+                <div class="modal-footer">
+                    <button id="saveBtn" class="btn btn-primary">Save</button>
+                    <button id="saveAndAddBtn" class="btn btn-primary">Save and add another</button>
+                    <button id="cancelBtn" class="btn btn-secondary">Cancel</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading Overlay -->
+        <div id="loadingOverlay" class="loading-overlay">
+            <div class="loading-spinner"></div>
+            <p>Loading...</p>
+        </div>
+    </div>
+
+    <!-- Handsontable JS -->
+    <script src="https://cdn.jsdelivr.net/npm/handsontable/dist/handsontable.full.min.js"></script>
+    
+    <!-- Custom JavaScript -->
+    <script src="/static/js/api-client.js"></script>
+    <script src="/static/js/drink-option-spreadsheet.js"></script>
+    <script src="/static/js/drink-option-form.js"></script>
+    <script>
+        // Initialize drink option spreadsheet and form when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            window.drinkOptionSpreadsheet = new DrinkOptionSpreadsheet('drink-option-spreadsheet');
+            window.drinkOptionForm = new DrinkOptionForm();
+            
+            // Setup button event listeners
+            document.getElementById('addDrinkOptionBtn').onclick = () => {
+                window.drinkOptionForm.openModal();
+            };
+            
+            document.getElementById('refreshBtn').onclick = () => {
+                window.drinkOptionSpreadsheet.refresh();
+            };
+        });
+    </script>
+</body>
+</html>

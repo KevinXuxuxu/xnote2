@@ -58,6 +58,30 @@ async fn create_drink_option(pool: web::Data<PgPool>, drink_option: web::Json<Dr
 async fn delete_drink_option(pool: web::Data<PgPool>, path: web::Path<String>) -> Result<HttpResponse> {
     let drink_option_name = path.into_inner();
     
+    // Check if drink option is referenced in drinks
+    let drink_count = sqlx::query!(
+        "SELECT COUNT(*) as count FROM drink WHERE name = $1",
+        drink_option_name
+    )
+    .fetch_one(pool.get_ref())
+    .await;
+    
+    match drink_count {
+        Ok(result) => {
+            if result.count.unwrap_or(0) > 0 {
+                return Ok(HttpResponse::BadRequest().json(serde_json::json!({
+                    "error": format!("Cannot delete drink option: it is referenced in {} drink(s). Please delete those drinks first.", result.count.unwrap_or(0))
+                })));
+            }
+        },
+        Err(e) => {
+            log::error!("Failed to check drink references for drink option {}: {}", drink_option_name, e);
+            return Ok(HttpResponse::InternalServerError().json(serde_json::json!({
+                "error": "Failed to delete drink option"
+            })));
+        }
+    }
+    
     match sqlx::query!(
         "DELETE FROM drink_option WHERE name = $1",
         drink_option_name
@@ -78,8 +102,16 @@ async fn delete_drink_option(pool: web::Data<PgPool>, path: web::Path<String>) -
         }
         Err(e) => {
             log::error!("Failed to delete drink option {}: {}", drink_option_name, e);
+            
+            // Check if it's a foreign key constraint error
+            let error_message = if e.to_string().contains("foreign key") {
+                "Cannot delete drink option: it is still referenced by other records"
+            } else {
+                "Failed to delete drink option"
+            };
+            
             Ok(HttpResponse::InternalServerError().json(serde_json::json!({
-                "error": "Failed to delete drink option"
+                "error": error_message
             })))
         }
     }
