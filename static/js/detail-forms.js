@@ -475,13 +475,31 @@ class DetailForms {
         return data;
     }
 
+    /**
+     * Get people IDs with default fallback to "xx" and "ww" if empty
+     */
+    getPeopleIds(peopleArray) {
+        if (!peopleArray || peopleArray.length === 0) {
+            // Find IDs for "xx" and "ww" people
+            const xxPerson = this.enumData.people.find(p => p.name.toLowerCase() === 'xx');
+            const wwPerson = this.enumData.people.find(p => p.name.toLowerCase() === 'ww');
+            
+            const defaultIds = [];
+            if (xxPerson) defaultIds.push(xxPerson.id);
+            if (wwPerson) defaultIds.push(wwPerson.id);
+            
+            return defaultIds.length > 0 ? defaultIds : [];
+        }
+        return peopleArray;
+    }
+
     transformMealData(data) {
         // Base meal data shared by all meals
         const baseMeal = {
             date: data.date,
             time: data.time,
             notes: data.notes || null,
-            people_ids: data.people || []
+            people_ids: this.getPeopleIds(data.people)
         };
 
         // Get food source information
@@ -537,7 +555,7 @@ class DetailForms {
             measure: data.measure || null,
             location: data.location || null,
             notes: data.notes || null,
-            people_ids: data.people || []
+            people_ids: this.getPeopleIds(data.people)
         };
     }
 
@@ -545,7 +563,7 @@ class DetailForms {
         // Base drink data shared by all drinks
         const baseDrink = {
             date: data.date,
-            people_ids: data.people || []
+            people_ids: this.getPeopleIds(data.people)
         };
 
         // Get the selected drinks
