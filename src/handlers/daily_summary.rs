@@ -54,7 +54,14 @@ async fn build_daily_summaries(
                 END as food_source_name,
                 COALESCE(mr.type, mp.type, mrt.type) as meal_type,
                 m.notes,
-                array_agg(pe.name ORDER BY pe.name) FILTER (WHERE pe.name IS NOT NULL) as people_names
+                array_agg(pe.name ORDER BY 
+                    CASE 
+                        WHEN LOWER(pe.name) = 'xx' THEN 1
+                        WHEN LOWER(pe.name) = 'ww' THEN 2
+                        ELSE 3
+                    END,
+                    pe.name
+                ) FILTER (WHERE pe.name IS NOT NULL) as people_names
             FROM meal m
             LEFT JOIN meal_recipe mr ON m.id = mr.meal
             LEFT JOIN recipe r ON mr.recipe = r.id
@@ -75,7 +82,14 @@ async fn build_daily_summaries(
                 e.measure,
                 e.location,
                 e.notes,
-                array_agg(pe.name ORDER BY pe.name) FILTER (WHERE pe.name IS NOT NULL) as people_names
+                array_agg(pe.name ORDER BY 
+                    CASE 
+                        WHEN LOWER(pe.name) = 'xx' THEN 1
+                        WHEN LOWER(pe.name) = 'ww' THEN 2
+                        ELSE 3
+                    END,
+                    pe.name
+                ) FILTER (WHERE pe.name IS NOT NULL) as people_names
             FROM event e
             JOIN activity a ON e.activity = a.id
             LEFT JOIN event_people ep ON e.id = ep.event
@@ -88,7 +102,7 @@ async fn build_daily_summaries(
                 date,
                 TRIM(CONCAT_WS(' ',
                     CASE 
-                        WHEN array_length(people_names, 1) > 0 AND NOT (array_length(people_names, 1) = 2 AND people_names = ARRAY['ww', 'xx']) 
+                        WHEN array_length(people_names, 1) > 0 AND NOT (array_length(people_names, 1) = 2 AND people_names = ARRAY['xx', 'ww']) 
                         THEN array_to_string(people_names, ', ') 
                     END,
                     activity_name,
@@ -103,7 +117,14 @@ async fn build_daily_summaries(
             SELECT 
                 d.date,
                 d.name as drink_name,
-                array_agg(pe.name ORDER BY pe.name) FILTER (WHERE pe.name IS NOT NULL) as people_names
+                array_agg(pe.name ORDER BY 
+                    CASE 
+                        WHEN LOWER(pe.name) = 'xx' THEN 1
+                        WHEN LOWER(pe.name) = 'ww' THEN 2
+                        ELSE 3
+                    END,
+                    pe.name
+                ) FILTER (WHERE pe.name IS NOT NULL) as people_names
             FROM drink d
             LEFT JOIN drink_people dp ON d.id = dp.drink
             LEFT JOIN people pe ON dp.people = pe.id
@@ -115,7 +136,7 @@ async fn build_daily_summaries(
                 date,
                 TRIM(CONCAT_WS(' ',
                     CASE 
-                        WHEN array_length(people_names, 1) > 0 AND NOT (array_length(people_names, 1) = 2 AND people_names = ARRAY['ww', 'xx']) 
+                        WHEN array_length(people_names, 1) > 0 AND NOT (array_length(people_names, 1) = 2 AND people_names = ARRAY['xx', 'ww']) 
                         THEN array_to_string(people_names, ', ') 
                     END,
                     drink_name

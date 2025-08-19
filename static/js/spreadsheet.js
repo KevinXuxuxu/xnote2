@@ -241,10 +241,10 @@ class EventSpreadsheet {
             // Build display text from structured data
             let displayText = '';
             
-            // Add people if present and not the excluded ones
-            if (mealItem.people && mealItem.people.trim() && 
-                !this.isExcludedPeople(mealItem.people)) {
-                displayText += mealItem.people + ' ';
+            // Add people if present (using formatPeople utility for consistent ordering)
+            const formattedPeople = window.utils.formatPeople(mealItem.people);
+            if (formattedPeople) {
+                displayText += formattedPeople + ' ';
             }
             
             // Add food name
@@ -266,16 +266,6 @@ class EventSpreadsheet {
         }
     }
 
-    /**
-     * Check if people should be excluded from display (like xx, ww)
-     */
-    isExcludedPeople(people) {
-        const excluded = ['xx', 'ww'];
-        const peopleList = people.split(',').map(p => p.trim().toLowerCase());
-        return peopleList.length === 2 && 
-               excluded.includes(peopleList[0]) && 
-               excluded.includes(peopleList[1]);
-    }
 
     /**
      * Custom renderer for drink cells

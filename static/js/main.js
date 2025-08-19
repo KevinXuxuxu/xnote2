@@ -131,8 +131,43 @@ window.utils = {
     },
     
     formatPeople: function(people) {
-        if (!people || people.length === 0) return '';
-        return people.map(p => p.name).join(', ');
+        if (!people) return '';
+        
+        // Handle string format (comma-separated names) or array of objects
+        let nameArray;
+        if (typeof people === 'string') {
+            nameArray = people.split(',').map(name => name.trim()).filter(name => name);
+        } else if (Array.isArray(people)) {
+            if (people.length === 0) return '';
+            nameArray = people.map(p => p.name);
+        } else {
+            return '';
+        }
+        
+        // Check if it's exactly just xx and ww - if so, omit them
+        const lowerNames = nameArray.map(name => name.toLowerCase());
+        if (lowerNames.length === 2 && lowerNames.includes('xx') && lowerNames.includes('ww')) {
+            return '';
+        }
+        
+        // Sort people: xx and ww first, then others alphabetically
+        const sortedNames = nameArray.slice().sort((a, b) => {
+            const aName = a.toLowerCase();
+            const bName = b.toLowerCase();
+            
+            // xx comes first
+            if (aName === 'xx') return -1;
+            if (bName === 'xx') return 1;
+            
+            // ww comes second
+            if (aName === 'ww') return -1;
+            if (bName === 'ww') return 1;
+            
+            // Others alphabetically
+            return aName.localeCompare(bName);
+        });
+        
+        return sortedNames.join(', ');
     },
     
     debounce: function(func, wait) {
