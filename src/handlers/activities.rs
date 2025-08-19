@@ -99,7 +99,6 @@ async fn update_activity(
     }
     if activity_data.activity_type.is_some() {
         query_parts.push(format!("type = ${}", param_index));
-        param_index += 1;
     }
     
     if query_parts.is_empty() {

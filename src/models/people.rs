@@ -8,14 +8,3 @@ pub struct People {
     pub notes: Option<String>,
 }
 
-#[derive(Debug, Deserialize)]
-pub struct CreatePeople {
-    pub name: String,
-    pub notes: Option<String>,
-}
-
-#[derive(Debug, Deserialize)]
-pub struct UpdatePeople {
-    pub name: Option<String>,
-    pub notes: Option<String>,
-}

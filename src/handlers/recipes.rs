@@ -109,7 +109,6 @@ async fn update_recipe(
     }
     if recipe_data.cautions.is_some() {
         query_parts.push(format!("cautions = ${}", param_index));
-        param_index += 1;
     }
     
     if query_parts.is_empty() {
