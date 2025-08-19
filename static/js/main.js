@@ -59,12 +59,8 @@ function autoApplyFilters() {
 }
 
 function setDefaultDateFilters() {
-    const today = new Date();
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(today.getDate() - 30);
-    
-    document.getElementById('startDate').value = thirtyDaysAgo.toISOString().split('T')[0];
-    document.getElementById('endDate').value = today.toISOString().split('T')[0];
+    document.getElementById('startDate').value = window.dateUtils.getDaysAgoLocal(30);
+    document.getElementById('endDate').value = window.dateUtils.getTodayLocal();
 }
 
 // Keyboard shortcuts

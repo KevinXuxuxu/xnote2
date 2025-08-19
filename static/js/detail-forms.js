@@ -94,7 +94,7 @@ class DetailForms {
     }
 
     getDefaultData(eventType) {
-        const today = new Date().toISOString().split('T')[0];
+        const today = window.dateUtils.getTodayLocal();
         
         switch (eventType) {
             case 'meal':

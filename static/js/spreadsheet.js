@@ -354,13 +354,11 @@ class EventSpreadsheet {
     }
 
     getDefaultStartDate() {
-        const date = new Date();
-        date.setDate(date.getDate() - 30);
-        return date.toISOString().split('T')[0];
+        return window.dateUtils.getDaysAgoLocal(30);
     }
 
     getDefaultEndDate() {
-        return new Date().toISOString().split('T')[0];
+        return window.dateUtils.getTodayLocal();
     }
 
     /**
