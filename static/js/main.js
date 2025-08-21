@@ -44,19 +44,8 @@ function setupFilters() {
         
         window.eventSpreadsheet.setFilters(filters);
     };
-    
-    // Auto-apply filters when date inputs change
-    document.getElementById('startDate').onchange = autoApplyFilters;
-    document.getElementById('endDate').onchange = autoApplyFilters;
 }
 
-function autoApplyFilters() {
-    // Small delay to allow for rapid changes
-    clearTimeout(window.filterTimeout);
-    window.filterTimeout = setTimeout(() => {
-        document.getElementById('applyFilters').click();
-    }, 300);
-}
 
 function setDefaultDateFilters() {
     document.getElementById('startDate').value = window.dateUtils.getDaysAgoLocal(30);
