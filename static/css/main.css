@@ -73,6 +73,47 @@ body {
     background-color: #545b62;
 }
 
+/* New button styles for UX improvement */
+.btn-create {
+    background-color: white;
+    color: #333;
+    border: 1px solid #ced4da;
+}
+
+.btn-create:hover {
+    background-color: #f8f9fa;
+    border-color: #adb5bd;
+}
+
+.btn-navigate {
+    background-color: #007bff;
+    color: white;
+}
+
+.btn-navigate:hover {
+    background-color: #0056b3;
+}
+
+.btn-refresh {
+    background-color: #6c757d;
+    color: white;
+    padding: 0.5rem;
+    min-width: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-refresh:hover {
+    background-color: #545b62;
+}
+
+.btn-refresh::before {
+    content: "↻";
+    font-size: 1.2rem;
+    font-weight: 300 !important;
+}
+
 .btn:disabled {
     opacity: 0.6;
     cursor: not-allowed;
