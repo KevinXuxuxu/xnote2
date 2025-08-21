@@ -7,9 +7,12 @@ class EventSpreadsheet {
         this.hotInstance = null;
         this.data = [];
         this.filteredData = [];
+        
+        // Initialize filters from URL parameters if available
+        const urlParams = new URLSearchParams(window.location.search);
         this.currentFilters = {
-            startDate: null,
-            endDate: null
+            startDate: urlParams.get('startDate') || null,
+            endDate: urlParams.get('endDate') || null
         };
         
         this.initializeSpreadsheet();

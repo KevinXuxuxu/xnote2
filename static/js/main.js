@@ -11,8 +11,27 @@ document.addEventListener('DOMContentLoaded', function() {
     // Setup filter handlers
     setupFilters();
     
-    // Set default date filters (last 30 days)
-    setDefaultDateFilters();
+    // Initialize date filters from URL or defaults
+    initializeDateFilters();
+    
+    // Handle browser back/forward buttons
+    window.addEventListener('popstate', function(event) {
+        // Sync form inputs with URL parameters
+        const urlParams = getUrlFilters();
+        if (urlParams.startDate) {
+            document.getElementById('startDate').value = urlParams.startDate;
+        }
+        if (urlParams.endDate) {
+            document.getElementById('endDate').value = urlParams.endDate;
+        }
+        
+        // Apply the filters from URL
+        const filters = {
+            startDate: urlParams.startDate || window.dateUtils.getDaysAgoLocal(30),
+            endDate: urlParams.endDate || window.dateUtils.getTodayLocal()
+        };
+        window.eventSpreadsheet.setFilters(filters);
+    });
 });
 
 function setupControlButtons() {
@@ -37,9 +56,15 @@ function setupControlButtons() {
 
 function setupFilters() {
     document.getElementById('applyFilters').onclick = () => {
+        const startDate = document.getElementById('startDate').value;
+        const endDate = document.getElementById('endDate').value;
+        
+        // Update URL with new filter parameters
+        updateUrlFilters(startDate, endDate);
+        
         const filters = {
-            startDate: document.getElementById('startDate').value,
-            endDate: document.getElementById('endDate').value
+            startDate: startDate,
+            endDate: endDate
         };
         
         window.eventSpreadsheet.setFilters(filters);
@@ -47,9 +72,62 @@ function setupFilters() {
 }
 
 
-function setDefaultDateFilters() {
-    document.getElementById('startDate').value = window.dateUtils.getDaysAgoLocal(30);
-    document.getElementById('endDate').value = window.dateUtils.getTodayLocal();
+function initializeDateFilters() {
+    // Read URL parameters first
+    const urlParams = getUrlFilters();
+    
+    if (urlParams.startDate && urlParams.endDate && isValidDate(urlParams.startDate) && isValidDate(urlParams.endDate)) {
+        // Use URL parameters if they exist and are valid
+        document.getElementById('startDate').value = urlParams.startDate;
+        document.getElementById('endDate').value = urlParams.endDate;
+    } else {
+        // Set defaults and update URL
+        const defaultStart = window.dateUtils.getDaysAgoLocal(30);
+        const defaultEnd = window.dateUtils.getTodayLocal();
+        
+        document.getElementById('startDate').value = defaultStart;
+        document.getElementById('endDate').value = defaultEnd;
+        
+        // Update URL with defaults (without triggering a reload)
+        updateUrlFilters(defaultStart, defaultEnd, false);
+    }
+}
+
+function isValidDate(dateString) {
+    const date = new Date(dateString);
+    return date instanceof Date && !isNaN(date) && dateString.match(/^\d{4}-\d{2}-\d{2}$/);
+}
+
+function getUrlFilters() {
+    const urlParams = new URLSearchParams(window.location.search);
+    return {
+        startDate: urlParams.get('startDate'),
+        endDate: urlParams.get('endDate')
+    };
+}
+
+function updateUrlFilters(startDate, endDate, pushState = true) {
+    const url = new URL(window.location);
+    
+    if (startDate) {
+        url.searchParams.set('startDate', startDate);
+    } else {
+        url.searchParams.delete('startDate');
+    }
+    
+    if (endDate) {
+        url.searchParams.set('endDate', endDate);
+    } else {
+        url.searchParams.delete('endDate');
+    }
+    
+    if (pushState) {
+        // Add to browser history so back/forward buttons work
+        window.history.pushState({}, '', url);
+    } else {
+        // Just update URL without adding to history (for initial load)
+        window.history.replaceState({}, '', url);
+    }
 }
 
 // Keyboard shortcuts
