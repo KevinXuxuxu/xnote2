@@ -108,7 +108,7 @@ async fn build_daily_summaries(
                     activity_name,
                     CASE WHEN location IS NOT NULL AND location != '' THEN '@' || location END,
                     CASE WHEN measure IS NOT NULL AND measure != '' THEN 'for ' || measure END,
-                    CASE WHEN notes IS NOT NULL AND notes != '' THEN '- ' || notes END
+                    CASE WHEN notes IS NOT NULL AND notes != '' THEN '(' || notes || ')' END
                 )) as formatted_event,
                 activity_type
             FROM event_aggregated

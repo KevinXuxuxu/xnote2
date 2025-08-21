@@ -252,7 +252,7 @@ class EventSpreadsheet {
             
             // Add notes if present
             if (mealItem.notes && mealItem.notes.trim()) {
-                displayText += ' - ' + mealItem.notes;
+                displayText += ' (' + mealItem.notes + ')';
             }
             
             td.textContent = displayText;
