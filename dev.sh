@@ -1,0 +1,1 @@
+docker run --rm -p 8080:8080 -v `pwd`:/rust_tmp -v $HOME.cargo/registry:/usr/local/cargo/registry -w /rust_tmp -it rust_dev /bin/bash
