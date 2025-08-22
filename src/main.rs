@@ -1,11 +1,11 @@
-use actix_web::{web, App, HttpResponse, HttpServer, Result, middleware::Logger};
 use actix_files as fs;
+use actix_web::{App, HttpResponse, HttpServer, Result, middleware::Logger, web};
 use sqlx::PgPool;
 use std::env;
 
-mod models;
 mod config;
 mod handlers;
+mod models;
 
 async fn health() -> Result<HttpResponse> {
     Ok(HttpResponse::Ok().json(serde_json::json!({
@@ -15,9 +15,8 @@ async fn health() -> Result<HttpResponse> {
 }
 
 async fn index() -> Result<HttpResponse> {
-    let html = std::fs::read_to_string("static/index.html")
-        .unwrap_or_else(|_| {
-            r#"<!DOCTYPE html>
+    let html = std::fs::read_to_string("static/index.html").unwrap_or_else(|_| {
+        r#"<!DOCTYPE html>
 <html>
 <head>
     <title>XNote - Daily Events Tracker</title>
@@ -28,9 +27,10 @@ async fn index() -> Result<HttpResponse> {
     <h1>XNote - Daily Events Tracker</h1>
     <p>Frontend is being set up...</p>
 </body>
-</html>"#.to_string()
-        });
-    
+</html>"#
+            .to_string()
+    });
+
     Ok(HttpResponse::Ok()
         .content_type("text/html; charset=utf-8")
         .body(html))
@@ -41,8 +41,7 @@ async fn main() -> std::io::Result<()> {
     dotenv::dotenv().ok();
     env_logger::init();
 
-    let database_url = env::var("DATABASE_URL")
-        .expect("DATABASE_URL must be set");
+    let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
 
     let pool = PgPool::connect(&database_url)
         .await
@@ -71,7 +70,7 @@ async fn main() -> std::io::Result<()> {
                     .configure(handlers::activities::configure)
                     .configure(handlers::activity_types::configure)
                     .configure(handlers::daily_summary::configure)
-                    .configure(handlers::food_types::configure)
+                    .configure(handlers::food_types::configure),
             )
     })
     .bind("0.0.0.0:8080")?

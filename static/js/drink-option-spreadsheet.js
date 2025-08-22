@@ -6,13 +6,13 @@ class DrinkOptionSpreadsheet {
         this.containerId = containerId;
         this.hotInstance = null;
         this.data = [];
-        
+
         this.initializeSpreadsheet();
     }
 
     initializeSpreadsheet() {
         const container = document.getElementById(this.containerId);
-        
+
         const config = {
             data: [],
             licenseKey: 'non-commercial-and-evaluation',
@@ -20,7 +20,7 @@ class DrinkOptionSpreadsheet {
             width: '100%',
             colHeaders: ['Name'],
             columns: [
-                { 
+                {
                     data: 'name',
                     type: 'text',
                     width: 400,
@@ -37,7 +37,7 @@ class DrinkOptionSpreadsheet {
                         name: 'Insert row above'
                     },
                     'row_below': {
-                        name: 'Insert row below'  
+                        name: 'Insert row below'
                     },
                     'remove_row': {
                         name: 'Delete row'
@@ -77,11 +77,11 @@ class DrinkOptionSpreadsheet {
     async loadData() {
         try {
             this.showLoading(true);
-            
+
             const drinkOptions = await apiClient.getDrinkOptions();
             this.data = drinkOptions;
             this.hotInstance.loadData(this.data);
-            
+
             this.showLoading(false);
         } catch (error) {
             console.error('Failed to load drink options:', error);
@@ -95,30 +95,30 @@ class DrinkOptionSpreadsheet {
      */
     async onCellChange(changes, source) {
         if (source === 'loadData') return;
-        
+
         for (const change of changes) {
             const [row, prop, oldValue, newValue] = change;
-            
+
             if (oldValue === newValue) continue;
-            
+
             const rowData = this.hotInstance.getDataAtRow(row);
             const drinkOptionName = rowData[0]; // Name is in first column
-            
+
             if (!drinkOptionName || !oldValue) {
                 // Skip new rows or rows without original name
                 continue;
             }
-            
+
             try {
                 // For drink options, we need to delete the old one and create a new one
                 // since the name is the primary key
                 await apiClient.deleteDrinkOption(oldValue);
                 await apiClient.createDrinkOption({ name: newValue });
-                
+
             } catch (error) {
                 console.error('Failed to update drink option:', error);
                 this.showError(`Failed to update drink option: ${error.message}`);
-                
+
                 // Revert the change
                 this.hotInstance.setDataAtCell(row, this.hotInstance.propToCol(prop), oldValue);
             }
@@ -131,14 +131,14 @@ class DrinkOptionSpreadsheet {
     beforeRowRemove(index, amount, physicalRows, source) {
         // Store the drink options that will be deleted
         this.drinkOptionsToDelete = [];
-        
+
         for (const physicalRow of physicalRows) {
             // Get the actual displayed row data at the time of deletion
             const rowData = this.hotInstance.getDataAtRow(physicalRow);
-            
+
             if (rowData && rowData[0]) { // Name is in column 0
                 const drinkOptionName = rowData[0];
-                
+
                 this.drinkOptionsToDelete.push({
                     name: drinkOptionName,
                     physicalRow: physicalRow
@@ -154,7 +154,7 @@ class DrinkOptionSpreadsheet {
         if (!this.drinkOptionsToDelete || this.drinkOptionsToDelete.length === 0) {
             return;
         }
-        
+
         // Delete each drink option from the backend
         for (const drinkOption of this.drinkOptionsToDelete) {
             try {
@@ -167,10 +167,10 @@ class DrinkOptionSpreadsheet {
                 return;
             }
         }
-        
+
         // Clear the temporary storage
         this.drinkOptionsToDelete = [];
-        
+
         // Refresh data to reflect the changes
         await this.loadData();
     }

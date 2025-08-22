@@ -1,7 +1,7 @@
+use crate::models::{people::People, product::Product, recipe::Recipe, restaurant::Restaurant};
 use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
-use crate::models::{people::People, recipe::Recipe, product::Product, restaurant::Restaurant};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct MealDetail {
@@ -21,7 +21,10 @@ pub enum MealFoodSource {
     #[serde(rename = "product")]
     Product { product: Product, meal_type: String },
     #[serde(rename = "restaurant")]
-    Restaurant { restaurant: Restaurant, meal_type: String },
+    Restaurant {
+        restaurant: Restaurant,
+        meal_type: String,
+    },
 }
 
 #[derive(Debug, Serialize, Deserialize)]

@@ -1,21 +1,21 @@
 /**
  * Main application initialization and event handlers
  */
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     // Initialize components
     window.eventSpreadsheet = new EventSpreadsheet('main-spreadsheet');
-    
+
     // Setup control button handlers
     setupControlButtons();
-    
+
     // Setup filter handlers
     setupFilters();
-    
+
     // Initialize date filters from URL or defaults
     initializeDateFilters();
-    
+
     // Handle browser back/forward buttons
-    window.addEventListener('popstate', function(event) {
+    window.addEventListener('popstate', function (event) {
         // Sync form inputs with URL parameters
         const urlParams = getUrlFilters();
         if (urlParams.startDate) {
@@ -24,7 +24,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (urlParams.endDate) {
             document.getElementById('endDate').value = urlParams.endDate;
         }
-        
+
         // Apply the filters from URL
         const filters = {
             startDate: urlParams.startDate || window.dateUtils.getDaysAgoLocal(30),
@@ -39,15 +39,15 @@ function setupControlButtons() {
     document.getElementById('addMealBtn').onclick = () => {
         window.detailForms.openDetails(null, 'meal');
     };
-    
+
     document.getElementById('addEventBtn').onclick = () => {
         window.detailForms.openDetails(null, 'event');
     };
-    
+
     document.getElementById('addDrinkBtn').onclick = () => {
         window.detailForms.openDetails(null, 'drink');
     };
-    
+
     // Refresh button
     document.getElementById('refreshBtn').onclick = () => {
         window.eventSpreadsheet.refresh();
@@ -58,15 +58,15 @@ function setupFilters() {
     document.getElementById('applyFilters').onclick = () => {
         const startDate = document.getElementById('startDate').value;
         const endDate = document.getElementById('endDate').value;
-        
+
         // Update URL with new filter parameters
         updateUrlFilters(startDate, endDate);
-        
+
         const filters = {
             startDate: startDate,
             endDate: endDate
         };
-        
+
         window.eventSpreadsheet.setFilters(filters);
     };
 }
@@ -75,7 +75,7 @@ function setupFilters() {
 function initializeDateFilters() {
     // Read URL parameters first
     const urlParams = getUrlFilters();
-    
+
     if (urlParams.startDate && urlParams.endDate && isValidDate(urlParams.startDate) && isValidDate(urlParams.endDate)) {
         // Use URL parameters if they exist and are valid
         document.getElementById('startDate').value = urlParams.startDate;
@@ -84,10 +84,10 @@ function initializeDateFilters() {
         // Set defaults and update URL
         const defaultStart = window.dateUtils.getDaysAgoLocal(30);
         const defaultEnd = window.dateUtils.getTodayLocal();
-        
+
         document.getElementById('startDate').value = defaultStart;
         document.getElementById('endDate').value = defaultEnd;
-        
+
         // Update URL with defaults (without triggering a reload)
         updateUrlFilters(defaultStart, defaultEnd, false);
     }
@@ -108,19 +108,19 @@ function getUrlFilters() {
 
 function updateUrlFilters(startDate, endDate, pushState = true) {
     const url = new URL(window.location);
-    
+
     if (startDate) {
         url.searchParams.set('startDate', startDate);
     } else {
         url.searchParams.delete('startDate');
     }
-    
+
     if (endDate) {
         url.searchParams.set('endDate', endDate);
     } else {
         url.searchParams.delete('endDate');
     }
-    
+
     if (pushState) {
         // Add to browser history so back/forward buttons work
         window.history.pushState({}, '', url);
@@ -131,25 +131,25 @@ function updateUrlFilters(startDate, endDate, pushState = true) {
 }
 
 // Keyboard shortcuts
-document.addEventListener('keydown', function(e) {
+document.addEventListener('keydown', function (e) {
     // Ctrl/Cmd + N for new meal
     if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
         e.preventDefault();
         window.detailForms.openDetails(null, 'meal');
     }
-    
+
     // Ctrl/Cmd + E for new event
     if ((e.ctrlKey || e.metaKey) && e.key === 'e') {
         e.preventDefault();
         window.detailForms.openDetails(null, 'event');
     }
-    
+
     // Ctrl/Cmd + D for new drink
     if ((e.ctrlKey || e.metaKey) && e.key === 'd') {
         e.preventDefault();
         window.detailForms.openDetails(null, 'drink');
     }
-    
+
     // F5 or Ctrl/Cmd + R for refresh
     if (e.key === 'F5' || ((e.ctrlKey || e.metaKey) && e.key === 'r')) {
         e.preventDefault();
@@ -158,9 +158,9 @@ document.addEventListener('keydown', function(e) {
 });
 
 // Global error handler
-window.addEventListener('error', function(e) {
+window.addEventListener('error', function (e) {
     console.error('Global error:', e.error);
-    
+
     // Show user-friendly error message
     const errorDiv = document.createElement('div');
     errorDiv.className = 'alert alert-error';
@@ -173,9 +173,9 @@ window.addEventListener('error', function(e) {
         <strong>Error:</strong> Something went wrong. Please refresh the page.
         <button onclick="this.parentElement.remove()" style="float: right; background: none; border: none; font-size: 1.2em; cursor: pointer;">&times;</button>
     `;
-    
+
     document.body.appendChild(errorDiv);
-    
+
     // Auto-remove after 5 seconds
     setTimeout(() => {
         if (errorDiv.parentElement) {
@@ -193,13 +193,13 @@ if ('serviceWorker' in navigator) {
 
 // Utility functions
 window.utils = {
-    formatDate: function(dateString) {
+    formatDate: function (dateString) {
         return new Date(dateString).toLocaleDateString();
     },
-    
-    formatPeople: function(people) {
+
+    formatPeople: function (people) {
         if (!people) return '';
-        
+
         // Handle string format (comma-separated names) or array of objects
         let nameArray;
         if (typeof people === 'string') {
@@ -210,34 +210,34 @@ window.utils = {
         } else {
             return '';
         }
-        
+
         // Check if it's exactly just xx and ww - if so, omit them
         const lowerNames = nameArray.map(name => name.toLowerCase());
         if (lowerNames.length === 2 && lowerNames.includes('xx') && lowerNames.includes('ww')) {
             return '';
         }
-        
+
         // Sort people: xx and ww first, then others alphabetically
         const sortedNames = nameArray.slice().sort((a, b) => {
             const aName = a.toLowerCase();
             const bName = b.toLowerCase();
-            
+
             // xx comes first
             if (aName === 'xx') return -1;
             if (bName === 'xx') return 1;
-            
+
             // ww comes second
             if (aName === 'ww') return -1;
             if (bName === 'ww') return 1;
-            
+
             // Others alphabetically
             return aName.localeCompare(bName);
         });
-        
+
         return sortedNames.join(', ');
     },
-    
-    debounce: function(func, wait) {
+
+    debounce: function (func, wait) {
         let timeout;
         return function executedFunction(...args) {
             const later = () => {
@@ -248,8 +248,8 @@ window.utils = {
             timeout = setTimeout(later, wait);
         };
     },
-    
-    showToast: function(message, type = 'info') {
+
+    showToast: function (message, type = 'info') {
         const toast = document.createElement('div');
         toast.className = `alert alert-${type}`;
         toast.style.position = 'fixed';
@@ -261,9 +261,9 @@ window.utils = {
             ${message}
             <button onclick="this.parentElement.remove()" style="float: right; background: none; border: none; font-size: 1.2em; cursor: pointer;">&times;</button>
         `;
-        
+
         document.body.appendChild(toast);
-        
+
         // Auto-remove after 3 seconds
         setTimeout(() => {
             if (toast.parentElement) {

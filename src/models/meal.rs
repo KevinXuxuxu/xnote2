@@ -37,7 +37,10 @@ pub enum CreateMealFoodSource {
     #[serde(rename = "product")]
     Product { product_id: i32, meal_type: String },
     #[serde(rename = "restaurant")]
-    Restaurant { restaurant_id: i32, meal_type: String },
+    Restaurant {
+        restaurant_id: i32,
+        meal_type: String,
+    },
 }
 
 #[derive(Debug, Serialize)]

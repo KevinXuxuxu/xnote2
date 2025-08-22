@@ -7,4 +7,3 @@ pub struct People {
     pub name: String,
     pub notes: Option<String>,
 }
-

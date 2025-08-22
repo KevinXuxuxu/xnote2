@@ -6,7 +6,7 @@ window.dateUtils = {
      * Format a Date object to YYYY-MM-DD string in local timezone
      * Fixes timezone issues with toISOString()
      */
-    formatLocalDate: function(date) {
+    formatLocalDate: function (date) {
         const year = date.getFullYear();
         const month = String(date.getMonth() + 1).padStart(2, '0');
         const day = String(date.getDate()).padStart(2, '0');
@@ -16,14 +16,14 @@ window.dateUtils = {
     /**
      * Get today's date in local timezone as YYYY-MM-DD
      */
-    getTodayLocal: function() {
+    getTodayLocal: function () {
         return this.formatLocalDate(new Date());
     },
 
     /**
      * Get date N days ago in local timezone as YYYY-MM-DD
      */
-    getDaysAgoLocal: function(days) {
+    getDaysAgoLocal: function (days) {
         const date = new Date();
         date.setDate(date.getDate() - days);
         return this.formatLocalDate(date);

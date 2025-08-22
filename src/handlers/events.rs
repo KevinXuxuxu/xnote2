@@ -1,30 +1,27 @@
-use actix_web::{web, HttpResponse, Result};
-use sqlx::PgPool;
-use crate::models::event::{Event, CreateEvent, CreateEventResponse};
-use crate::models::detail::{EventDetail, ActivityDetail};
+use crate::models::detail::{ActivityDetail, EventDetail};
+use crate::models::event::{CreateEvent, CreateEventResponse, Event};
 use crate::models::people::People;
+use actix_web::{HttpResponse, Result, web};
+use sqlx::PgPool;
 
 pub fn configure(cfg: &mut web::ServiceConfig) {
     cfg.service(
         web::resource("/events")
             .route(web::get().to(get_events))
-            .route(web::post().to(create_event))
+            .route(web::post().to(create_event)),
     )
     .service(
         web::resource("/events/{id}")
             .route(web::get().to(get_event))
             .route(web::put().to(update_event))
-            .route(web::delete().to(delete_event))
+            .route(web::delete().to(delete_event)),
     )
-    .service(
-        web::resource("/events/{id}/details")
-            .route(web::get().to(get_event_details))
-    );
+    .service(web::resource("/events/{id}/details").route(web::get().to(get_event_details)));
 }
 
 async fn get_events(pool: web::Data<PgPool>) -> Result<HttpResponse> {
     match sqlx::query_as::<_, Event>(
-        "SELECT id, date, activity, measure, location, notes FROM event ORDER BY date DESC"
+        "SELECT id, date, activity, measure, location, notes FROM event ORDER BY date DESC",
     )
     .fetch_all(pool.get_ref())
     .await
@@ -41,7 +38,7 @@ async fn get_events(pool: web::Data<PgPool>) -> Result<HttpResponse> {
 
 async fn create_event(
     pool: web::Data<PgPool>,
-    event_data: web::Json<CreateEvent>
+    event_data: web::Json<CreateEvent>,
 ) -> Result<HttpResponse> {
     let mut tx = match pool.begin().await {
         Ok(tx) => tx,
@@ -118,9 +115,9 @@ async fn create_event(
 
 async fn get_event(pool: web::Data<PgPool>, path: web::Path<i32>) -> Result<HttpResponse> {
     let event_id = path.into_inner();
-    
+
     match sqlx::query_as::<_, Event>(
-        "SELECT id, date, activity, measure, location, notes FROM event WHERE id = $1"
+        "SELECT id, date, activity, measure, location, notes FROM event WHERE id = $1",
     )
     .bind(event_id)
     .fetch_optional(pool.get_ref())
@@ -153,7 +150,7 @@ async fn delete_event(_pool: web::Data<PgPool>, _path: web::Path<i32>) -> Result
 
 async fn get_event_details(pool: web::Data<PgPool>, path: web::Path<i32>) -> Result<HttpResponse> {
     let event_id = path.into_inner();
-    
+
     // Get event with activity details in a single query
     let event_query = sqlx::query!(
         r#"
@@ -192,7 +189,7 @@ async fn get_event_details(pool: web::Data<PgPool>, path: web::Path<i32>) -> Res
         JOIN event_people ep ON p.id = ep.people
         WHERE ep.event = $1
         ORDER BY p.name
-        "#
+        "#,
     )
     .bind(event_id)
     .fetch_all(pool.get_ref())

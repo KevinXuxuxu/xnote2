@@ -7,7 +7,7 @@ pub struct MealItem {
     pub people: String,        // Comma-separated people names
     pub notes: Option<String>, // Notes if any
     #[serde(rename = "type")]
-    pub meal_type: String,     // cooked, dine-in, etc.
+    pub meal_type: String, // cooked, dine-in, etc.
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -22,7 +22,7 @@ pub struct DailySummary {
     pub date: NaiveDate,
     pub day_of_week: String,
     pub breakfast: Vec<MealItem>,
-    pub lunch: Vec<MealItem>, 
+    pub lunch: Vec<MealItem>,
     pub dinner: Vec<MealItem>,
     pub drinks: Vec<String>,
     pub events: Vec<EventItem>,

@@ -10,10 +10,10 @@ class RestaurantForm {
         this.saveAndAddBtn = document.getElementById('saveAndAddBtn');
         this.cancelBtn = document.getElementById('cancelBtn');
         this.closeBtn = document.querySelector('.close');
-        
+
         this.locationChoices = null;
         this.foodTypeChoices = null;
-        
+
         this.setupEventListeners();
         this.loadEnumData();
     }
@@ -23,14 +23,14 @@ class RestaurantForm {
         this.cancelBtn.onclick = () => this.closeModal();
         this.saveBtn.onclick = () => this.saveRestaurant(false);
         this.saveAndAddBtn.onclick = () => this.saveRestaurant(true);
-        
+
         // Close modal when clicking outside
         window.onclick = (event) => {
             if (event.target === this.modal) {
                 this.closeModal();
             }
         };
-        
+
         // Close modal when pressing ESC key
         document.addEventListener('keydown', (event) => {
             if (event.key === 'Escape' && this.modal.style.display === 'block') {
@@ -52,7 +52,7 @@ class RestaurantForm {
                     return [];
                 })
             ]);
-            
+
             this.enumData = {
                 locations: locations || [],
                 foodTypes: foodTypes || []
@@ -84,9 +84,9 @@ class RestaurantForm {
                     <label for="restaurantLocation">Location</label>
                     <select id="restaurantLocation" name="location">
                         <option value="">Select or enter location</option>
-                        ${this.enumData.locations.map(location => 
-                            `<option value="${location.name}">${location.name}</option>`
-                        ).join('')}
+                        ${this.enumData.locations.map(location =>
+            `<option value="${location.name}">${location.name}</option>`
+        ).join('')}
                     </select>
                 </div>
                 
@@ -94,9 +94,9 @@ class RestaurantForm {
                     <label for="restaurantType">Food Type <span style="color: red;">*</span></label>
                     <select id="restaurantType" name="type" required>
                         <option value="">Select or enter food type</option>
-                        ${this.enumData.foodTypes.map(foodType => 
-                            `<option value="${foodType.name}">${foodType.name}</option>`
-                        ).join('')}
+                        ${this.enumData.foodTypes.map(foodType =>
+            `<option value="${foodType.name}">${foodType.name}</option>`
+        ).join('')}
                     </select>
                 </div>
                 
@@ -106,10 +106,10 @@ class RestaurantForm {
                 </div>
             </form>
         `;
-        
+
         // Initialize Choices.js for selectors
         this.initializeChoices();
-        
+
         // Focus on the name field
         setTimeout(() => {
             document.getElementById('restaurantName').focus();
@@ -126,7 +126,7 @@ class RestaurantForm {
             this.foodTypeChoices.destroy();
             this.foodTypeChoices = null;
         }
-        
+
         // Initialize location selector (optional, with custom values)
         const locationSelect = document.getElementById('restaurantLocation');
         if (locationSelect) {
@@ -141,7 +141,7 @@ class RestaurantForm {
                 allowHTML: false,
             });
         }
-        
+
         // Initialize food type selector (required, with custom values)
         const foodTypeSelect = document.getElementById('restaurantType');
         if (foodTypeSelect) {
@@ -162,7 +162,7 @@ class RestaurantForm {
         const form = document.getElementById('restaurantForm');
         const formData = new FormData(form);
         const data = {};
-        
+
         for (const [key, value] of formData.entries()) {
             if (key === 'price') {
                 data[key] = value ? parseFloat(value) : null;
@@ -170,7 +170,7 @@ class RestaurantForm {
                 data[key] = value.trim();
             }
         }
-        
+
         // Override with Choices.js values if available
         if (this.locationChoices) {
             const locationValue = this.locationChoices.getValue(true);
@@ -180,13 +180,13 @@ class RestaurantForm {
             const foodTypeValue = this.foodTypeChoices.getValue(true);
             data.type = foodTypeValue || '';
         }
-        
+
         return data;
     }
 
     validateForm(data) {
         const errors = [];
-        
+
         if (!data.name) {
             errors.push('Restaurant name is required');
         }
@@ -196,7 +196,7 @@ class RestaurantForm {
         if (data.price !== null && data.price < 0) {
             errors.push('Price cannot be negative');
         }
-        
+
         return errors;
     }
 
@@ -204,19 +204,19 @@ class RestaurantForm {
         try {
             const formData = this.collectFormData();
             const errors = this.validateForm(formData);
-            
+
             if (errors.length > 0) {
                 alert('Please fix the following errors:\n' + errors.join('\n'));
                 return;
             }
-            
+
             await apiClient.createRestaurant(formData);
-            
+
             // Refresh the restaurant spreadsheet
             if (window.restaurantSpreadsheet) {
                 window.restaurantSpreadsheet.refresh();
             }
-            
+
             if (addAnother) {
                 // Keep modal open and reset form
                 this.renderForm();
@@ -224,7 +224,7 @@ class RestaurantForm {
                 // Close modal
                 this.closeModal();
             }
-            
+
         } catch (error) {
             console.error('Failed to create restaurant:', error);
             alert(`Failed to create restaurant: ${error.message}`);
@@ -241,7 +241,7 @@ class RestaurantForm {
             this.foodTypeChoices.destroy();
             this.foodTypeChoices = null;
         }
-        
+
         this.modal.style.display = 'none';
     }
 }

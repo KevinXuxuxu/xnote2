@@ -1,30 +1,27 @@
-use actix_web::{web, HttpResponse, Result};
-use sqlx::PgPool;
-use crate::models::meal::{Meal, CreateMeal, CreateMealFoodSource, CreateMealResponse};
 use crate::models::detail::{MealDetail, MealFoodSource};
-use crate::models::{people::People, recipe::Recipe, product::Product, restaurant::Restaurant};
+use crate::models::meal::{CreateMeal, CreateMealFoodSource, CreateMealResponse, Meal};
+use crate::models::{people::People, product::Product, recipe::Recipe, restaurant::Restaurant};
+use actix_web::{HttpResponse, Result, web};
+use sqlx::PgPool;
 
 pub fn configure(cfg: &mut web::ServiceConfig) {
     cfg.service(
         web::resource("/meals")
             .route(web::get().to(get_meals))
-            .route(web::post().to(create_meal))
+            .route(web::post().to(create_meal)),
     )
     .service(
         web::resource("/meals/{id}")
             .route(web::get().to(get_meal))
             .route(web::put().to(update_meal))
-            .route(web::delete().to(delete_meal))
+            .route(web::delete().to(delete_meal)),
     )
-    .service(
-        web::resource("/meals/{id}/details")
-            .route(web::get().to(get_meal_details))
-    );
+    .service(web::resource("/meals/{id}/details").route(web::get().to(get_meal_details)));
 }
 
 async fn get_meals(pool: web::Data<PgPool>) -> Result<HttpResponse> {
     match sqlx::query_as::<_, Meal>(
-        "SELECT id, date, \"time\", notes FROM meal ORDER BY date DESC, \"time\""
+        "SELECT id, date, \"time\", notes FROM meal ORDER BY date DESC, \"time\"",
     )
     .fetch_all(pool.get_ref())
     .await
@@ -40,8 +37,8 @@ async fn get_meals(pool: web::Data<PgPool>) -> Result<HttpResponse> {
 }
 
 async fn create_meal(
-    pool: web::Data<PgPool>, 
-    meal_data: web::Json<CreateMeal>
+    pool: web::Data<PgPool>,
+    meal_data: web::Json<CreateMeal>,
 ) -> Result<HttpResponse> {
     let mut tx = match pool.begin().await {
         Ok(tx) => tx,
@@ -72,11 +69,14 @@ async fn create_meal(
                 "error": "Failed to create meal"
             })));
         }
-    };  
+    };
 
     // Step 2: Insert food source relationship based on type
     let food_source_result = match &meal_data.food_source {
-        CreateMealFoodSource::Recipe { recipe_id, meal_type } => {
+        CreateMealFoodSource::Recipe {
+            recipe_id,
+            meal_type,
+        } => {
             sqlx::query!(
                 "INSERT INTO meal_recipe (meal, recipe, type) VALUES ($1, $2, $3)",
                 meal_id,
@@ -86,7 +86,10 @@ async fn create_meal(
             .execute(&mut *tx)
             .await
         }
-        CreateMealFoodSource::Product { product_id, meal_type } => {
+        CreateMealFoodSource::Product {
+            product_id,
+            meal_type,
+        } => {
             sqlx::query!(
                 "INSERT INTO meal_product (meal, product, type) VALUES ($1, $2, $3)",
                 meal_id,
@@ -96,7 +99,10 @@ async fn create_meal(
             .execute(&mut *tx)
             .await
         }
-        CreateMealFoodSource::Restaurant { restaurant_id, meal_type } => {
+        CreateMealFoodSource::Restaurant {
+            restaurant_id,
+            meal_type,
+        } => {
             sqlx::query!(
                 "INSERT INTO meal_restaurant (meal, restaurant, type) VALUES ($1, $2, $3)",
                 meal_id,
@@ -155,13 +161,11 @@ async fn create_meal(
 
 async fn get_meal(pool: web::Data<PgPool>, path: web::Path<i32>) -> Result<HttpResponse> {
     let meal_id = path.into_inner();
-    
-    match sqlx::query_as::<_, Meal>(
-        "SELECT id, date, \"time\", notes FROM meal WHERE id = $1"
-    )
-    .bind(meal_id)
-    .fetch_optional(pool.get_ref())
-    .await
+
+    match sqlx::query_as::<_, Meal>("SELECT id, date, \"time\", notes FROM meal WHERE id = $1")
+        .bind(meal_id)
+        .fetch_optional(pool.get_ref())
+        .await
     {
         Ok(Some(meal)) => Ok(HttpResponse::Ok().json(meal)),
         Ok(None) => Ok(HttpResponse::NotFound().json(serde_json::json!({
@@ -190,7 +194,7 @@ async fn delete_meal(_pool: web::Data<PgPool>, _path: web::Path<i32>) -> Result<
 
 async fn get_meal_details(pool: web::Data<PgPool>, path: web::Path<i32>) -> Result<HttpResponse> {
     let meal_id = path.into_inner();
-    
+
     // First get the meal basic info
     let meal_query = sqlx::query!(
         r#"SELECT id, date, "time", notes FROM meal WHERE id = $1"#,
@@ -214,7 +218,7 @@ async fn get_meal_details(pool: web::Data<PgPool>, path: web::Path<i32>) -> Resu
         }
     };
 
-    // Get food source (recipe, product, or restaurant)  
+    // Get food source (recipe, product, or restaurant)
     let food_source_result = sqlx::query!(
         r#"
         SELECT 
@@ -242,38 +246,36 @@ async fn get_meal_details(pool: web::Data<PgPool>, path: web::Path<i32>) -> Resu
     .await;
 
     let food_source = match food_source_result {
-        Ok(Some(row)) => {
-            match row.food_source_type.as_deref() {
-                Some("recipe") if row.recipe_id.is_some() => Some(MealFoodSource::Recipe {
-                    recipe: Recipe {
-                        id: row.recipe_id.unwrap(),
-                        name: row.recipe_name.unwrap(),
-                        ingredients: row.ingredients.unwrap(),
-                        procedure: row.procedure.unwrap(),
-                        cautions: row.cautions,
-                    },
-                    meal_type: row.meal_type.unwrap_or_else(|| "unknown".to_string()),
-                }),
-                Some("product") if row.product_id.is_some() => Some(MealFoodSource::Product {
-                    product: Product {
-                        id: row.product_id.unwrap(),
-                        name: row.product_name.unwrap(),
-                    },
-                    meal_type: row.meal_type.unwrap_or_else(|| "unknown".to_string()),
-                }),
-                Some("restaurant") if row.restaurant_id.is_some() => Some(MealFoodSource::Restaurant {
-                    restaurant: Restaurant {
-                        id: row.restaurant_id.unwrap(),
-                        name: row.restaurant_name.unwrap(),
-                        location: row.location.unwrap(),
-                        food_type: row.restaurant_type.unwrap(),
-                        price: row.price,
-                    },
-                    meal_type: row.meal_type.unwrap_or_else(|| "unknown".to_string()),
-                }),
-                _ => None,
-            }
-        }
+        Ok(Some(row)) => match row.food_source_type.as_deref() {
+            Some("recipe") if row.recipe_id.is_some() => Some(MealFoodSource::Recipe {
+                recipe: Recipe {
+                    id: row.recipe_id.unwrap(),
+                    name: row.recipe_name.unwrap(),
+                    ingredients: row.ingredients.unwrap(),
+                    procedure: row.procedure.unwrap(),
+                    cautions: row.cautions,
+                },
+                meal_type: row.meal_type.unwrap_or_else(|| "unknown".to_string()),
+            }),
+            Some("product") if row.product_id.is_some() => Some(MealFoodSource::Product {
+                product: Product {
+                    id: row.product_id.unwrap(),
+                    name: row.product_name.unwrap(),
+                },
+                meal_type: row.meal_type.unwrap_or_else(|| "unknown".to_string()),
+            }),
+            Some("restaurant") if row.restaurant_id.is_some() => Some(MealFoodSource::Restaurant {
+                restaurant: Restaurant {
+                    id: row.restaurant_id.unwrap(),
+                    name: row.restaurant_name.unwrap(),
+                    location: row.location.unwrap(),
+                    food_type: row.restaurant_type.unwrap(),
+                    price: row.price,
+                },
+                meal_type: row.meal_type.unwrap_or_else(|| "unknown".to_string()),
+            }),
+            _ => None,
+        },
         Ok(None) => None,
         Err(e) => {
             log::error!("Failed to fetch meal food source {}: {}", meal_id, e);
@@ -291,7 +293,7 @@ async fn get_meal_details(pool: web::Data<PgPool>, path: web::Path<i32>) -> Resu
         JOIN meal_people mp ON p.id = mp.people
         WHERE mp.meal = $1
         ORDER BY p.name
-        "#
+        "#,
     )
     .bind(meal_id)
     .fetch_all(pool.get_ref())

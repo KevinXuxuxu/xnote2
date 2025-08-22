@@ -6,13 +6,13 @@ class ActivitySpreadsheet {
         this.containerId = containerId;
         this.hotInstance = null;
         this.data = [];
-        
+
         this.initializeSpreadsheet();
     }
 
     initializeSpreadsheet() {
         const container = document.getElementById(this.containerId);
-        
+
         const config = {
             data: [],
             licenseKey: 'non-commercial-and-evaluation',
@@ -20,19 +20,19 @@ class ActivitySpreadsheet {
             width: '100%',
             colHeaders: ['ID', 'Name', 'Activity Type'],
             columns: [
-                { 
+                {
                     data: 'id',
                     type: 'numeric',
                     readOnly: true,
                     width: 80
                 },
-                { 
+                {
                     data: 'name',
                     type: 'text',
                     width: 300,
                     validator: this.requiredValidator
                 },
-                { 
+                {
                     data: 'type',
                     type: 'text',
                     width: 200,
@@ -49,7 +49,7 @@ class ActivitySpreadsheet {
                         name: 'Insert row above'
                     },
                     'row_below': {
-                        name: 'Insert row below'  
+                        name: 'Insert row below'
                     },
                     'remove_row': {
                         name: 'Delete row'
@@ -89,11 +89,11 @@ class ActivitySpreadsheet {
     async loadData() {
         try {
             this.showLoading(true);
-            
+
             const activities = await apiClient.getActivities();
             this.data = activities;
             this.hotInstance.loadData(this.data);
-            
+
             this.showLoading(false);
         } catch (error) {
             console.error('Failed to load activities:', error);
@@ -107,31 +107,31 @@ class ActivitySpreadsheet {
      */
     async onCellChange(changes, source) {
         if (source === 'loadData') return;
-        
+
         for (const change of changes) {
             const [row, prop, oldValue, newValue] = change;
-            
+
             if (oldValue === newValue) continue;
-            
+
             const rowData = this.hotInstance.getDataAtRow(row);
             const activityId = rowData[0]; // ID is in first column
-            
+
             if (!activityId) {
                 // Skip rows without ID (shouldn't happen with modal approach)
                 continue;
             }
-            
+
             try {
                 // Prepare update data
                 const updateData = {};
                 updateData[prop] = newValue;
-                
+
                 await apiClient.updateActivity(activityId, updateData);
-                
+
             } catch (error) {
                 console.error('Failed to update activity:', error);
                 this.showError(`Failed to update activity: ${error.message}`);
-                
+
                 // Revert the change
                 this.hotInstance.setDataAtCell(row, this.hotInstance.propToCol(prop), oldValue);
             }
@@ -144,15 +144,15 @@ class ActivitySpreadsheet {
     beforeRowRemove(index, amount, physicalRows, source) {
         // Store the activities that will be deleted
         this.activitiesToDelete = [];
-        
+
         for (const physicalRow of physicalRows) {
             // Get the actual displayed row data at the time of deletion
             const rowData = this.hotInstance.getDataAtRow(physicalRow);
-            
+
             if (rowData && rowData[0]) { // ID is in column 0
                 const activityId = rowData[0];
                 const activityName = rowData[1]; // Name is in column 1
-                
+
                 this.activitiesToDelete.push({
                     id: activityId,
                     name: activityName,
@@ -169,7 +169,7 @@ class ActivitySpreadsheet {
         if (!this.activitiesToDelete || this.activitiesToDelete.length === 0) {
             return;
         }
-        
+
         // Delete each activity from the backend
         for (const activity of this.activitiesToDelete) {
             try {
@@ -182,10 +182,10 @@ class ActivitySpreadsheet {
                 return;
             }
         }
-        
+
         // Clear the temporary storage
         this.activitiesToDelete = [];
-        
+
         // Refresh data to reflect the changes
         await this.loadData();
     }

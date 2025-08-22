@@ -1,26 +1,23 @@
-use actix_web::{web, HttpResponse, Result};
+use crate::models::daily_summary::{DailySummary, DailySummaryQuery, EventItem, MealItem};
+use actix_web::{HttpResponse, Result, web};
 use chrono::NaiveDate;
 use sqlx::PgPool;
-use crate::models::daily_summary::{DailySummary, DailySummaryQuery, MealItem, EventItem};
 
 pub fn configure(cfg: &mut web::ServiceConfig) {
-    cfg.service(
-        web::resource("/daily-summary")
-            .route(web::get().to(get_daily_summary))
-    );
+    cfg.service(web::resource("/daily-summary").route(web::get().to(get_daily_summary)));
 }
 
 async fn get_daily_summary(
-    pool: web::Data<PgPool>, 
-    query: web::Query<DailySummaryQuery>
+    pool: web::Data<PgPool>,
+    query: web::Query<DailySummaryQuery>,
 ) -> Result<HttpResponse> {
-    let start_date = query.start_date.unwrap_or_else(|| {
-        chrono::Utc::now().naive_utc().date() - chrono::Duration::days(30)
-    });
-    
-    let end_date = query.end_date.unwrap_or_else(|| {
-        chrono::Utc::now().naive_utc().date()
-    });
+    let start_date = query
+        .start_date
+        .unwrap_or_else(|| chrono::Utc::now().naive_utc().date() - chrono::Duration::days(30));
+
+    let end_date = query
+        .end_date
+        .unwrap_or_else(|| chrono::Utc::now().naive_utc().date());
 
     match build_daily_summaries(&pool, start_date, end_date).await {
         Ok(summaries) => Ok(HttpResponse::Ok().json(summaries)),
@@ -36,7 +33,7 @@ async fn get_daily_summary(
 async fn build_daily_summaries(
     pool: &PgPool,
     start_date: NaiveDate,
-    end_date: NaiveDate
+    end_date: NaiveDate,
 ) -> Result<Vec<DailySummary>, sqlx::Error> {
     let summaries = sqlx::query!(
         r#"
@@ -221,30 +218,34 @@ async fn build_daily_summaries(
     .fetch_all(pool)
     .await?;
 
-    let result = summaries.into_iter().map(|row| {
-        let parse_meals = |meals: Vec<serde_json::Value>| -> Vec<MealItem> {
-            meals.into_iter().filter_map(|meal| {
-                serde_json::from_value(meal).ok()
-            }).collect()
-        };
+    let result = summaries
+        .into_iter()
+        .map(|row| {
+            let parse_meals = |meals: Vec<serde_json::Value>| -> Vec<MealItem> {
+                meals
+                    .into_iter()
+                    .filter_map(|meal| serde_json::from_value(meal).ok())
+                    .collect()
+            };
 
-        let parse_events = |events: Vec<serde_json::Value>| -> Vec<EventItem> {
-            events.into_iter().filter_map(|event| {
-                serde_json::from_value(event).ok()
-            }).collect()
-        };
+            let parse_events = |events: Vec<serde_json::Value>| -> Vec<EventItem> {
+                events
+                    .into_iter()
+                    .filter_map(|event| serde_json::from_value(event).ok())
+                    .collect()
+            };
 
-        DailySummary {
-            date: row.date.expect("Date should always be present"),
-            day_of_week: row.day_of_week.unwrap_or_else(|| "Unknown".to_string()),
-            breakfast: parse_meals(row.breakfast),
-            lunch: parse_meals(row.lunch),
-            dinner: parse_meals(row.dinner),
-            drinks: row.drinks,
-            events: parse_events(row.events),
-        }
-    }).collect();
+            DailySummary {
+                date: row.date.expect("Date should always be present"),
+                day_of_week: row.day_of_week.unwrap_or_else(|| "Unknown".to_string()),
+                breakfast: parse_meals(row.breakfast),
+                lunch: parse_meals(row.lunch),
+                dinner: parse_meals(row.dinner),
+                drinks: row.drinks,
+                events: parse_events(row.events),
+            }
+        })
+        .collect();
 
     Ok(result)
 }
-

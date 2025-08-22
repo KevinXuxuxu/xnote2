@@ -1,19 +1,21 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>XNote - Drink Option</title>
-    
+
     <!-- Handsontable CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/handsontable/styles/handsontable.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/handsontable/styles/ht-theme-main.min.css">
-    
+
     <!-- Custom CSS -->
     <link rel="stylesheet" href="/static/css/main.css">
 
     <link rel="icon" href="/static/images/favicon.svg" />
 </head>
+
 <body>
     <div class="container">
         <header class="header">
@@ -21,10 +23,10 @@
             <div class="controls">
                 <!-- Object Creation Buttons -->
                 <button id="addDrinkOptionBtn" class="btn btn-create">Add Drink Option</button>
-                
+
                 <!-- Refresh Button -->
                 <button id="refreshBtn" class="btn btn-refresh" title="Refresh"></button>
-                
+
                 <!-- Navigation Buttons -->
                 <a href="/static/index.html" class="btn btn-navigate">Daily View</a>
                 <a href="/static/recipe.html" class="btn btn-navigate">Recipe</a>
@@ -69,26 +71,27 @@
 
     <!-- Handsontable JS -->
     <script src="https://cdn.jsdelivr.net/npm/handsontable/dist/handsontable.full.min.js"></script>
-    
+
     <!-- Custom JavaScript -->
     <script src="/static/js/api-client.js"></script>
     <script src="/static/js/drink-option-spreadsheet.js"></script>
     <script src="/static/js/drink-option-form.js"></script>
     <script>
         // Initialize drink option spreadsheet and form when page loads
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             window.drinkOptionSpreadsheet = new DrinkOptionSpreadsheet('drink-option-spreadsheet');
             window.drinkOptionForm = new DrinkOptionForm();
-            
+
             // Setup button event listeners
             document.getElementById('addDrinkOptionBtn').onclick = () => {
                 window.drinkOptionForm.openModal();
             };
-            
+
             document.getElementById('refreshBtn').onclick = () => {
                 window.drinkOptionSpreadsheet.refresh();
             };
         });
     </script>
 </body>
+
 </html>

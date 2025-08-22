@@ -11,7 +11,7 @@ class ApiClient {
      */
     async request(endpoint, options = {}) {
         const url = `${this.baseUrl}${endpoint}`;
-        
+
         const config = {
             headers: {
                 'Content-Type': 'application/json',
@@ -22,11 +22,11 @@ class ApiClient {
 
         try {
             const response = await fetch(url, config);
-            
+
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
-            
+
             return await response.json();
         } catch (error) {
             console.error('API request failed:', error);
@@ -354,18 +354,18 @@ class ApiClient {
     async getDailySummary(startDate = null, endDate = null) {
         let endpoint = '/daily-summary';
         const params = new URLSearchParams();
-        
+
         if (startDate) {
             params.append('start_date', startDate);
         }
         if (endDate) {
             params.append('end_date', endDate);
         }
-        
+
         if (params.toString()) {
             endpoint += '?' + params.toString();
         }
-        
+
         return this.request(endpoint);
     }
 

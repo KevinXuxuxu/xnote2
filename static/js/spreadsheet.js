@@ -7,20 +7,20 @@ class EventSpreadsheet {
         this.hotInstance = null;
         this.data = [];
         this.filteredData = [];
-        
+
         // Initialize filters from URL parameters if available
         const urlParams = new URLSearchParams(window.location.search);
         this.currentFilters = {
             startDate: urlParams.get('startDate') || null,
             endDate: urlParams.get('endDate') || null
         };
-        
+
         this.initializeSpreadsheet();
     }
 
     initializeSpreadsheet() {
         const container = document.getElementById(this.containerId);
-        
+
         const config = {
             data: [],
             licenseKey: 'non-commercial-and-evaluation',
@@ -30,7 +30,7 @@ class EventSpreadsheet {
                 'Date',
                 'Day',
                 'Breakfast 1',
-                'Breakfast 2', 
+                'Breakfast 2',
                 'Lunch 1',
                 'Lunch 2',
                 'Dinner 1',
@@ -48,7 +48,7 @@ class EventSpreadsheet {
                 'Event 10'
             ],
             columns: [
-                { 
+                {
                     data: 'date',
                     type: 'date',
                     dateFormat: 'YYYY-MM-DD',
@@ -56,63 +56,63 @@ class EventSpreadsheet {
                     width: 110,
                     renderer: this.dateRenderer.bind(this)
                 },
-                { 
+                {
                     data: 'day_of_week',
                     type: 'text',
                     readOnly: true,
                     width: 50,
                     renderer: this.dayRenderer.bind(this)
                 },
-                { 
+                {
                     data: 'breakfast.0',
                     type: 'text',
                     readOnly: true,
                     width: 150,
                     renderer: this.mealRenderer.bind(this)
                 },
-                { 
+                {
                     data: 'breakfast.1',
                     type: 'text',
                     readOnly: true,
                     width: 100,
                     renderer: this.mealRenderer.bind(this)
                 },
-                { 
+                {
                     data: 'lunch.0',
                     type: 'text',
                     readOnly: true,
                     width: 200,
                     renderer: this.mealRenderer.bind(this)
                 },
-                { 
+                {
                     data: 'lunch.1',
                     type: 'text',
                     readOnly: true,
                     width: 200,
                     renderer: this.mealRenderer.bind(this)
                 },
-                { 
+                {
                     data: 'dinner.0',
                     type: 'text',
                     readOnly: true,
                     width: 200,
                     renderer: this.mealRenderer.bind(this)
                 },
-                { 
+                {
                     data: 'dinner.1',
                     type: 'text',
                     readOnly: true,
                     width: 200,
                     renderer: this.mealRenderer.bind(this)
                 },
-                { 
+                {
                     data: 'drinks',
                     type: 'text',
                     readOnly: true,
                     width: 150,
                     renderer: this.drinkRenderer.bind(this)
                 },
-                ...Array.from({length: 10}, (_, i) => ({
+                ...Array.from({ length: 10 }, (_, i) => ({
                     data: `events.${i}`,
                     type: 'text',
                     readOnly: true,
@@ -130,7 +130,7 @@ class EventSpreadsheet {
                         name: 'Insert row above'
                     },
                     'row_below': {
-                        name: 'Insert row below'  
+                        name: 'Insert row below'
                     },
                     'remove_row': {
                         name: 'Delete row'
@@ -159,18 +159,18 @@ class EventSpreadsheet {
      */
     dateRenderer(instance, td, row, col, prop, value, cellProperties) {
         Handsontable.renderers.DateRenderer.apply(this, arguments);
-        
+
         if (!value) return;
-        
+
         const date = new Date(value);
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         date.setHours(0, 0, 0, 0);
-        
+
         // Clear existing classes
         td.className = td.className || '';
         td.className = td.className.replace(/date-(today|weekend)/g, '');
-        
+
         // Check if it's today
         if (date.getTime() === today.getTime()) {
             td.className += ' date-today';
@@ -191,20 +191,20 @@ class EventSpreadsheet {
      */
     dayRenderer(instance, td, row, col, prop, value, cellProperties) {
         Handsontable.renderers.TextRenderer.apply(this, arguments);
-        
+
         // Clear existing classes
         td.className = td.className || '';
         td.className = td.className.replace(/day-(today|weekend)/g, '');
-        
+
         // Get the corresponding date from the same row
         const rowData = this.filteredData[row];
         if (!rowData || !rowData.date) return;
-        
+
         const date = new Date(rowData.date);
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         date.setHours(0, 0, 0, 0);
-        
+
         // Check if it's today
         if (date.getTime() === today.getTime()) {
             td.className += ' day-today';
@@ -225,41 +225,41 @@ class EventSpreadsheet {
      */
     mealRenderer(instance, td, row, col, prop, value, cellProperties) {
         Handsontable.renderers.TextRenderer.apply(this, arguments);
-        
+
         // Clear existing meal type classes
         td.className = td.className || '';
         td.className = td.className.replace(/meal-type-\w+/g, '');
-        
+
         // Get the meal data from the row
         const rowData = this.filteredData[row];
         if (!rowData) return;
-        
+
         // Extract meal time and index from prop (e.g., "breakfast.0")
         const [mealTime, indexStr] = prop.split('.');
         const index = parseInt(indexStr);
-        
+
         if (rowData[mealTime] && rowData[mealTime][index]) {
             const mealItem = rowData[mealTime][index];
-            
+
             // Build display text from structured data
             let displayText = '';
-            
+
             // Add people if present (using formatPeople utility for consistent ordering)
             const formattedPeople = window.utils.formatPeople(mealItem.people);
             if (formattedPeople) {
                 displayText += formattedPeople + ' ';
             }
-            
+
             // Add food name
             displayText += mealItem.name || '';
-            
+
             // Add notes if present
             if (mealItem.notes && mealItem.notes.trim()) {
                 displayText += ' (' + mealItem.notes + ')';
             }
-            
+
             td.textContent = displayText;
-            
+
             // Add CSS class based on meal type
             if (mealItem.type) {
                 td.className += ` meal-type-${mealItem.type}`;
@@ -275,10 +275,10 @@ class EventSpreadsheet {
      */
     drinkRenderer(instance, td, row, col, prop, value, cellProperties) {
         Handsontable.renderers.TextRenderer.apply(this, arguments);
-        
+
         td.className = td.className || '';
         td.className = td.className.replace(/event-type-\w+/g, '');
-        
+
         if (value && Array.isArray(value) && value.length > 0) {
             td.textContent = value.join(', ');
             td.className += ' event-type-drink';
@@ -290,26 +290,26 @@ class EventSpreadsheet {
      */
     eventRenderer(instance, td, row, col, prop, value, cellProperties) {
         Handsontable.renderers.TextRenderer.apply(this, arguments);
-        
+
         // Clear existing activity type classes
         td.className = td.className || '';
         td.className = td.className.replace(/activity-type-\w+/g, '');
         td.className = td.className.replace(/event-type-\w+/g, '');
-        
+
         // Get the event data from the row
         const rowData = this.filteredData[row];
         if (!rowData) return;
-        
+
         // Extract event index from prop (e.g., "events.0")
         const [, indexStr] = prop.split('.');
         const index = parseInt(indexStr);
-        
+
         if (rowData.events && rowData.events[index]) {
             const eventItem = rowData.events[index];
-            
+
             // Display the text
             td.textContent = eventItem.text || '';
-            
+
             // Add CSS class based on activity type
             if (eventItem.type) {
                 // Normalize activity type for CSS class (replace spaces with hyphens)
@@ -327,17 +327,17 @@ class EventSpreadsheet {
     async loadData() {
         try {
             this.showLoading(true);
-            
+
             // Get date range from filters or use defaults
             const startDate = this.currentFilters.startDate || this.getDefaultStartDate();
             const endDate = this.currentFilters.endDate || this.getDefaultEndDate();
-            
+
             const dailySummaries = await apiClient.getDailySummary(startDate, endDate);
-            
+
             // Post-process data to merge meals with same criteria
             this.data = this.postProcessMealMerging(dailySummaries);
             this.applyFilters();
-            
+
             this.showLoading(false);
         } catch (error) {
             console.error('Failed to load data:', error);
@@ -361,14 +361,14 @@ class EventSpreadsheet {
     postProcessMealMerging(dailySummaries) {
         return dailySummaries.map(day => {
             const processedDay = { ...day };
-            
+
             // Process each meal time (breakfast, lunch, dinner)
             ['breakfast', 'lunch', 'dinner'].forEach(mealTime => {
                 if (day[mealTime] && day[mealTime].length > 0) {
                     processedDay[mealTime] = this.mergeMealsByType(day[mealTime]);
                 }
             });
-            
+
             return processedDay;
         });
     }
@@ -382,7 +382,7 @@ class EventSpreadsheet {
         const grouped = meals.reduce((groups, meal) => {
             // Create a key that includes everything except the food name
             const key = `${meal.type || 'unknown'}|${meal.people || ''}|${meal.notes || ''}`;
-            
+
             if (!groups[key]) {
                 groups[key] = [];
             }
@@ -392,10 +392,10 @@ class EventSpreadsheet {
 
         // Merge meals within each group
         const merged = [];
-        
+
         Object.keys(grouped).forEach(groupKey => {
             const mealsInGroup = grouped[groupKey];
-            
+
             if (mealsInGroup.length === 1) {
                 // Single meal, no merging needed
                 merged.push(mealsInGroup[0]);
@@ -419,7 +419,7 @@ class EventSpreadsheet {
 
         // Use the first meal as template since all attributes should be identical
         const template = meals[0];
-        
+
         return {
             name: foodNames.join(', '),  // Combine food names with commas
             people: template.people,     // Same people for all in group
@@ -446,7 +446,7 @@ class EventSpreadsheet {
     setFilters(filters) {
         const oldFilters = { ...this.currentFilters };
         this.currentFilters = { ...this.currentFilters, ...filters };
-        
+
         // If date filters changed, reload data from API
         if (filters.startDate !== undefined || filters.endDate !== undefined) {
             this.loadData();
@@ -486,7 +486,7 @@ class EventSpreadsheet {
     openDetails(row) {
         const rowData = this.filteredData[row];
         if (!rowData) return;
-        
+
         // For daily view, we could open a day-specific detail modal
         // For now, just show the date-specific events
         alert(`View details for ${rowData.date} - ${rowData.day_of_week}`);

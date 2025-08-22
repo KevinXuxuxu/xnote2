@@ -10,7 +10,7 @@ class DrinkOptionForm {
         this.saveAndAddBtn = document.getElementById('saveAndAddBtn');
         this.cancelBtn = document.getElementById('cancelBtn');
         this.closeBtn = document.querySelector('.close');
-        
+
         this.setupEventListeners();
     }
 
@@ -19,14 +19,14 @@ class DrinkOptionForm {
         this.cancelBtn.onclick = () => this.closeModal();
         this.saveBtn.onclick = () => this.saveDrinkOption(false);
         this.saveAndAddBtn.onclick = () => this.saveDrinkOption(true);
-        
+
         // Close modal when clicking outside
         window.onclick = (event) => {
             if (event.target === this.modal) {
                 this.closeModal();
             }
         };
-        
+
         // Close modal when pressing ESC key
         document.addEventListener('keydown', (event) => {
             if (event.key === 'Escape' && this.modal.style.display === 'block') {
@@ -50,7 +50,7 @@ class DrinkOptionForm {
                 </div>
             </form>
         `;
-        
+
         // Focus on the name field
         setTimeout(() => {
             document.getElementById('drinkOptionName').focus();
@@ -61,21 +61,21 @@ class DrinkOptionForm {
         const form = document.getElementById('drinkOptionForm');
         const formData = new FormData(form);
         const data = {};
-        
+
         for (const [key, value] of formData.entries()) {
             data[key] = value.trim();
         }
-        
+
         return data;
     }
 
     validateForm(data) {
         const errors = [];
-        
+
         if (!data.name) {
             errors.push('Drink option name is required');
         }
-        
+
         return errors;
     }
 
@@ -83,19 +83,19 @@ class DrinkOptionForm {
         try {
             const formData = this.collectFormData();
             const errors = this.validateForm(formData);
-            
+
             if (errors.length > 0) {
                 alert('Please fix the following errors:\n' + errors.join('\n'));
                 return;
             }
-            
+
             await apiClient.createDrinkOption(formData);
-            
+
             // Refresh the drink option spreadsheet
             if (window.drinkOptionSpreadsheet) {
                 window.drinkOptionSpreadsheet.refresh();
             }
-            
+
             if (addAnother) {
                 // Keep modal open and reset form
                 this.renderForm();
@@ -103,7 +103,7 @@ class DrinkOptionForm {
                 // Close modal
                 this.closeModal();
             }
-            
+
         } catch (error) {
             console.error('Failed to create drink option:', error);
             alert(`Failed to create drink option: ${error.message}`);

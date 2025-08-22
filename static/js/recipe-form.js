@@ -10,7 +10,7 @@ class RecipeForm {
         this.saveAndAddBtn = document.getElementById('saveAndAddBtn');
         this.cancelBtn = document.getElementById('cancelBtn');
         this.closeBtn = document.querySelector('.close');
-        
+
         this.setupEventListeners();
     }
 
@@ -19,14 +19,14 @@ class RecipeForm {
         this.cancelBtn.onclick = () => this.closeModal();
         this.saveBtn.onclick = () => this.saveRecipe(false);
         this.saveAndAddBtn.onclick = () => this.saveRecipe(true);
-        
+
         // Close modal when clicking outside
         window.onclick = (event) => {
             if (event.target === this.modal) {
                 this.closeModal();
             }
         };
-        
+
         // Close modal when pressing ESC key
         document.addEventListener('keydown', (event) => {
             if (event.key === 'Escape' && this.modal.style.display === 'block') {
@@ -68,7 +68,7 @@ class RecipeForm {
                 </div>
             </form>
         `;
-        
+
         // Focus on the name field
         setTimeout(() => {
             document.getElementById('recipeName').focus();
@@ -79,22 +79,22 @@ class RecipeForm {
         const form = document.getElementById('recipeForm');
         const formData = new FormData(form);
         const data = {};
-        
+
         for (const [key, value] of formData.entries()) {
             data[key] = value.trim();
         }
-        
+
         // Convert empty cautions to null
         if (!data.cautions) {
             data.cautions = null;
         }
-        
+
         return data;
     }
 
     validateForm(data) {
         const errors = [];
-        
+
         if (!data.name) {
             errors.push('Recipe name is required');
         }
@@ -104,7 +104,7 @@ class RecipeForm {
         if (!data.procedure) {
             errors.push('Procedure is required');
         }
-        
+
         return errors;
     }
 
@@ -112,19 +112,19 @@ class RecipeForm {
         try {
             const formData = this.collectFormData();
             const errors = this.validateForm(formData);
-            
+
             if (errors.length > 0) {
                 alert('Please fix the following errors:\n' + errors.join('\n'));
                 return;
             }
-            
+
             await apiClient.createRecipe(formData);
-            
+
             // Refresh the recipe spreadsheet
             if (window.recipeSpreadsheet) {
                 window.recipeSpreadsheet.refresh();
             }
-            
+
             if (addAnother) {
                 // Keep modal open and reset form
                 this.renderForm();
@@ -132,7 +132,7 @@ class RecipeForm {
                 // Close modal
                 this.closeModal();
             }
-            
+
         } catch (error) {
             console.error('Failed to create recipe:', error);
             alert(`Failed to create recipe: ${error.message}`);

@@ -5,4 +5,3 @@ use sqlx::FromRow;
 pub struct Location {
     pub name: String,
 }
-

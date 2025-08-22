@@ -10,7 +10,7 @@ class DetailForms {
         this.saveAndAddBtn = document.getElementById('saveAndAddBtn');
         this.cancelBtn = document.getElementById('cancelBtn');
         this.closeBtn = document.querySelector('.close');
-        
+
         this.currentEventId = null;
         this.currentEventType = null;
         this.currentData = null;
@@ -18,7 +18,7 @@ class DetailForms {
         this.foodSourceChoices = null; // Store Choices.js instance for food sources
         this.activityChoices = null; // Store Choices.js instance for activities
         this.drinkChoices = null; // Store Choices.js instance for drinks
-        
+
         this.setupEventListeners();
         this.loadEnumData();
     }
@@ -28,14 +28,14 @@ class DetailForms {
         this.cancelBtn.onclick = () => this.closeModal();
         this.saveBtn.onclick = () => this.saveChanges(false);
         this.saveAndAddBtn.onclick = () => this.saveChanges(true);
-        
+
         // Close modal when clicking outside
         window.onclick = (event) => {
             if (event.target === this.modal) {
                 this.closeModal();
             }
         };
-        
+
         // Close modal when pressing ESC key
         document.addEventListener('keydown', (event) => {
             if (event.key === 'Escape' && this.modal.style.display === 'block') {
@@ -73,7 +73,7 @@ class DetailForms {
     async openDetails(id, eventType) {
         this.currentEventId = id;
         this.currentEventType = eventType;
-        
+
         try {
             if (id) {
                 // Edit existing event
@@ -84,7 +84,7 @@ class DetailForms {
                 this.currentData = this.getDefaultData(eventType);
                 this.modalTitle.textContent = `New ${this.capitalize(eventType)}`;
             }
-            
+
             this.renderForm();
             this.modal.style.display = 'block';
         } catch (error) {
@@ -95,7 +95,7 @@ class DetailForms {
 
     getDefaultData(eventType) {
         const today = window.dateUtils.getTodayLocal();
-        
+
         switch (eventType) {
             case 'meal':
                 return {
@@ -141,7 +141,7 @@ class DetailForms {
 
     renderMealForm() {
         const data = this.currentData;
-        
+
         this.modalBody.innerHTML = `
             <form id="mealForm">
                 <div class="form-row">
@@ -227,7 +227,7 @@ class DetailForms {
                 </div>
             </form>
         `;
-        
+
         // Setup food source type change handler
         const foodSourceRadios = this.modalBody.querySelectorAll('input[name="foodSourceType"]');
         foodSourceRadios.forEach(radio => {
@@ -237,12 +237,12 @@ class DetailForms {
                 }
             };
         });
-        
+
         // Render initial food source details
         if (data.food_source) {
             this.renderFoodSourceDetails(data.food_source.type);
         }
-        
+
         // Initialize Choices.js for all selectors
         this.initializeChoicesSelectors();
     }
@@ -258,16 +258,16 @@ class DetailForms {
     renderFoodSourceDetails(type) {
         const container = document.getElementById('foodSourceDetails');
         const data = this.currentData;
-        
+
         switch (type) {
             case 'recipe':
                 container.innerHTML = `
                     <div class="form-group">
                         <label for="recipeSelect">Recipes</label>
                         <select id="recipeSelect" name="recipes" multiple>
-                            ${this.enumData.recipes.map(recipe => 
-                                `<option value="${recipe.id}" ${data.food_source?.details?.recipe?.id === recipe.id ? 'selected' : ''}>${recipe.name}</option>`
-                            ).join('')}
+                            ${this.enumData.recipes.map(recipe =>
+                    `<option value="${recipe.id}" ${data.food_source?.details?.recipe?.id === recipe.id ? 'selected' : ''}>${recipe.name}</option>`
+                ).join('')}
                         </select>
                     </div>
                 `;
@@ -277,9 +277,9 @@ class DetailForms {
                     <div class="form-group">
                         <label for="productSelect">Products</label>
                         <select id="productSelect" name="products" multiple>
-                            ${this.enumData.products.map(product => 
-                                `<option value="${product.id}" ${data.food_source?.details?.product?.id === product.id ? 'selected' : ''}>${product.name}</option>`
-                            ).join('')}
+                            ${this.enumData.products.map(product =>
+                    `<option value="${product.id}" ${data.food_source?.details?.product?.id === product.id ? 'selected' : ''}>${product.name}</option>`
+                ).join('')}
                         </select>
                     </div>
                 `;
@@ -289,9 +289,9 @@ class DetailForms {
                     <div class="form-group">
                         <label for="restaurantSelect">Restaurants</label>
                         <select id="restaurantSelect" name="restaurants" multiple>
-                            ${this.enumData.restaurants.map(restaurant => 
-                                `<option value="${restaurant.id}" ${data.food_source?.details?.restaurant?.id === restaurant.id ? 'selected' : ''}>${restaurant.name}</option>`
-                            ).join('')}
+                            ${this.enumData.restaurants.map(restaurant =>
+                    `<option value="${restaurant.id}" ${data.food_source?.details?.restaurant?.id === restaurant.id ? 'selected' : ''}>${restaurant.name}</option>`
+                ).join('')}
                         </select>
                     </div>
                 `;
@@ -299,14 +299,14 @@ class DetailForms {
             default:
                 container.innerHTML = '';
         }
-        
+
         // Initialize Choices.js for the food source detail selector
         this.initializeFoodSourceChoices();
     }
 
     renderEventForm() {
         const data = this.currentData;
-        
+
         this.modalBody.innerHTML = `
             <form id="eventForm">
                 <div class="form-row">
@@ -324,9 +324,9 @@ class DetailForms {
                     <label for="eventActivity">Activity</label>
                     <select id="eventActivity" name="activity" required>
                         <option value="">Select an activity</option>
-                        ${this.enumData.activities.map(activity => 
-                            `<option value="${activity.id}" ${data.activity?.id === activity.id ? 'selected' : ''}>${activity.name} (${activity.type})</option>`
-                        ).join('')}
+                        ${this.enumData.activities.map(activity =>
+            `<option value="${activity.id}" ${data.activity?.id === activity.id ? 'selected' : ''}>${activity.name} (${activity.type})</option>`
+        ).join('')}
                     </select>
                 </div>
                 
@@ -348,14 +348,14 @@ class DetailForms {
                 </div>
             </form>
         `;
-        
+
         // Initialize Choices.js for all selectors
         this.initializeEventChoicesSelectors();
     }
 
     renderDrinkForm() {
         const data = this.currentData;
-        
+
         this.modalBody.innerHTML = `
             <form id="drinkForm">
                 <div class="form-group">
@@ -366,9 +366,9 @@ class DetailForms {
                 <div class="form-group">
                     <label for="drinkName">Drinks</label>
                     <select id="drinkName" name="drinks" multiple required>
-                        ${this.enumData.drinkOptions.map(option => 
-                            `<option value="${option.name}" ${data.name === option.name ? 'selected' : ''}>${option.name}</option>`
-                        ).join('')}
+                        ${this.enumData.drinkOptions.map(option =>
+            `<option value="${option.name}" ${data.name === option.name ? 'selected' : ''}>${option.name}</option>`
+        ).join('')}
                     </select>
                 </div>
                 
@@ -380,14 +380,14 @@ class DetailForms {
                 </div>
             </form>
         `;
-        
+
         // Initialize Choices.js for drink and people selectors
         this.initializeDrinkChoicesSelectors();
     }
 
     renderPeopleOptions(selectedPeople = []) {
         const selectedIds = selectedPeople.map(p => p.id);
-        return this.enumData.people.map(person => 
+        return this.enumData.people.map(person =>
             `<option value="${person.id}" ${selectedIds.includes(person.id) ? 'selected' : ''}>${person.name}</option>`
         ).join('');
     }
@@ -395,7 +395,7 @@ class DetailForms {
     async saveChanges(addAnother = false) {
         try {
             const formData = this.collectFormData();
-            
+
             if (this.currentEventId) {
                 // Update existing event
                 await this.updateEvent(formData);
@@ -403,12 +403,12 @@ class DetailForms {
                 // Create new event
                 await this.createEvent(formData);
             }
-            
+
             // Refresh the spreadsheet
             if (window.eventSpreadsheet) {
                 window.eventSpreadsheet.refresh();
             }
-            
+
             if (addAnother) {
                 // Keep modal open and reset to new form of same type
                 this.openDetails(null, this.currentEventType);
@@ -416,7 +416,7 @@ class DetailForms {
                 // Close modal as usual
                 this.closeModal();
             }
-            
+
         } catch (error) {
             console.error('Failed to save changes:', error);
             alert(`Failed to save changes: ${error.message}`);
@@ -427,11 +427,11 @@ class DetailForms {
         const form = this.modalBody.querySelector('form');
         const formData = new FormData(form);
         const data = {};
-        
+
         for (const [key, value] of formData.entries()) {
             data[key] = value;
         }
-        
+
         // Handle multiple select for people (using Choices.js)
         if (this.peopleChoices) {
             data.people = this.peopleChoices.getValue(true).map(value => parseInt(value));
@@ -442,7 +442,7 @@ class DetailForms {
                 data.people = Array.from(peopleSelect.selectedOptions).map(option => parseInt(option.value));
             }
         }
-        
+
         // Handle activity selection (using Choices.js)
         if (this.activityChoices) {
             const activityValue = this.activityChoices.getValue(true);
@@ -450,19 +450,19 @@ class DetailForms {
                 data.activity = parseInt(activityValue);
             }
         }
-        
-        
+
+
         // Handle multiple select for drinks (using Choices.js)
         if (this.drinkChoices) {
             data.drinks = this.drinkChoices.getValue(true);
         }
-        
+
         // Handle multiple select for food sources (using Choices.js)
         if (this.foodSourceChoices) {
             const fieldName = this.foodSourceChoices.passedElement.element.name;
             data[fieldName] = this.foodSourceChoices.getValue(true).map(value => parseInt(value));
         }
-        
+
         // Transform data based on event type
         if (this.currentEventType === 'meal') {
             return this.transformMealData(data);
@@ -471,7 +471,7 @@ class DetailForms {
         } else if (this.currentEventType === 'drink') {
             return this.transformDrinkData(data);
         }
-        
+
         return data;
     }
 
@@ -483,11 +483,11 @@ class DetailForms {
             // Find IDs for "xx" and "ww" people
             const xxPerson = this.enumData.people.find(p => p.name.toLowerCase() === 'xx');
             const wwPerson = this.enumData.people.find(p => p.name.toLowerCase() === 'ww');
-            
+
             const defaultIds = [];
             if (xxPerson) defaultIds.push(xxPerson.id);
             if (wwPerson) defaultIds.push(wwPerson.id);
-            
+
             return defaultIds.length > 0 ? defaultIds : [];
         }
         return peopleArray;
@@ -505,7 +505,7 @@ class DetailForms {
         // Get food source information
         const foodSourceType = data.foodSourceType;
         const mealType = data.mealType || 'cooked';
-        
+
         // Get the selected food items (recipes, products, or restaurants)
         let foodItems = [];
         if (foodSourceType === 'recipe' && data.recipes && data.recipes.length > 0) {
@@ -521,7 +521,7 @@ class DetailForms {
         // Create multiple meal objects, one for each selected food item
         const meals = foodItems.map(foodId => {
             const meal = { ...baseMeal };
-            
+
             if (foodSourceType === 'recipe') {
                 meal.food_source = {
                     type: 'recipe',
@@ -541,7 +541,7 @@ class DetailForms {
                     meal_type: mealType
                 };
             }
-            
+
             return meal;
         });
 
@@ -633,7 +633,7 @@ class DetailForms {
             this.peopleChoices.destroy();
             this.peopleChoices = null;
         }
-        
+
         // Initialize people selector (multi-select with search)
         const peopleSelect = this.modalBody.querySelector('select[name="people"]');
         if (peopleSelect) {
@@ -646,7 +646,7 @@ class DetailForms {
                 itemSelectText: '',
             });
         }
-        
+
         // Initialize food source choices if they exist
         this.initializeFoodSourceChoices();
     }
@@ -657,7 +657,7 @@ class DetailForms {
             this.foodSourceChoices.destroy();
             this.foodSourceChoices = null;
         }
-        
+
         // Find any food source select element (recipes, products, or restaurants)
         const foodSourceSelect = this.modalBody.querySelector('select[name="recipes"], select[name="products"], select[name="restaurants"]');
         if (foodSourceSelect) {
@@ -682,7 +682,7 @@ class DetailForms {
             this.activityChoices.destroy();
             this.activityChoices = null;
         }
-        
+
         // Initialize people selector (multi-select with search)
         const peopleSelect = this.modalBody.querySelector('select[name="people"]');
         if (peopleSelect) {
@@ -695,7 +695,7 @@ class DetailForms {
                 itemSelectText: '',
             });
         }
-        
+
         // Initialize activity selector (single-select with search)
         const activitySelect = this.modalBody.querySelector('select[name="activity"]');
         if (activitySelect) {
@@ -719,7 +719,7 @@ class DetailForms {
             this.drinkChoices.destroy();
             this.drinkChoices = null;
         }
-        
+
         // Initialize people selector (multi-select with search)
         const peopleSelect = this.modalBody.querySelector('select[name="people"]');
         if (peopleSelect) {
@@ -732,7 +732,7 @@ class DetailForms {
                 itemSelectText: '',
             });
         }
-        
+
         // Initialize drinks selector (multi-select with search)
         const drinkSelect = this.modalBody.querySelector('select[name="drinks"]');
         if (drinkSelect) {
@@ -765,7 +765,7 @@ class DetailForms {
             this.drinkChoices.destroy();
             this.drinkChoices = null;
         }
-        
+
         this.modal.style.display = 'none';
         this.currentEventId = null;
         this.currentEventType = null;

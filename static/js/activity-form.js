@@ -10,9 +10,9 @@ class ActivityForm {
         this.saveAndAddBtn = document.getElementById('saveAndAddBtn');
         this.cancelBtn = document.getElementById('cancelBtn');
         this.closeBtn = document.querySelector('.close');
-        
+
         this.activityTypeChoices = null;
-        
+
         this.setupEventListeners();
         this.loadEnumData();
     }
@@ -22,14 +22,14 @@ class ActivityForm {
         this.cancelBtn.onclick = () => this.closeModal();
         this.saveBtn.onclick = () => this.saveActivity(false);
         this.saveAndAddBtn.onclick = () => this.saveActivity(true);
-        
+
         // Close modal when clicking outside
         window.onclick = (event) => {
             if (event.target === this.modal) {
                 this.closeModal();
             }
         };
-        
+
         // Close modal when pressing ESC key
         document.addEventListener('keydown', (event) => {
             if (event.key === 'Escape' && this.modal.style.display === 'block') {
@@ -45,7 +45,7 @@ class ActivityForm {
                 console.warn('Failed to load activity types:', err);
                 return [];
             });
-            
+
             this.enumData = {
                 activityTypes: activityTypes || []
             };
@@ -75,17 +75,17 @@ class ActivityForm {
                     <label for="activityType">Activity Type <span style="color: red;">*</span></label>
                     <select id="activityType" name="type" required>
                         <option value="">Select or enter activity type</option>
-                        ${this.enumData.activityTypes.map(activityType => 
-                            `<option value="${activityType.name}">${activityType.name}</option>`
-                        ).join('')}
+                        ${this.enumData.activityTypes.map(activityType =>
+            `<option value="${activityType.name}">${activityType.name}</option>`
+        ).join('')}
                     </select>
                 </div>
             </form>
         `;
-        
+
         // Initialize Choices.js for activity type selector
         this.initializeChoices();
-        
+
         // Focus on the name field
         setTimeout(() => {
             document.getElementById('activityName').focus();
@@ -98,7 +98,7 @@ class ActivityForm {
             this.activityTypeChoices.destroy();
             this.activityTypeChoices = null;
         }
-        
+
         // Initialize activity type selector (required, with custom values)
         const activityTypeSelect = document.getElementById('activityType');
         if (activityTypeSelect) {
@@ -119,30 +119,30 @@ class ActivityForm {
         const form = document.getElementById('activityForm');
         const formData = new FormData(form);
         const data = {};
-        
+
         for (const [key, value] of formData.entries()) {
             data[key] = value.trim();
         }
-        
+
         // Override with Choices.js value if available
         if (this.activityTypeChoices) {
             const activityTypeValue = this.activityTypeChoices.getValue(true);
             data.type = activityTypeValue || '';
         }
-        
+
         return data;
     }
 
     validateForm(data) {
         const errors = [];
-        
+
         if (!data.name) {
             errors.push('Activity name is required');
         }
         if (!data.type) {
             errors.push('Activity type is required');
         }
-        
+
         return errors;
     }
 
@@ -150,19 +150,19 @@ class ActivityForm {
         try {
             const formData = this.collectFormData();
             const errors = this.validateForm(formData);
-            
+
             if (errors.length > 0) {
                 alert('Please fix the following errors:\n' + errors.join('\n'));
                 return;
             }
-            
+
             await apiClient.createActivity(formData);
-            
+
             // Refresh the activity spreadsheet
             if (window.activitySpreadsheet) {
                 window.activitySpreadsheet.refresh();
             }
-            
+
             if (addAnother) {
                 // Keep modal open and reset form
                 this.renderForm();
@@ -170,7 +170,7 @@ class ActivityForm {
                 // Close modal
                 this.closeModal();
             }
-            
+
         } catch (error) {
             console.error('Failed to create activity:', error);
             alert(`Failed to create activity: ${error.message}`);
@@ -183,7 +183,7 @@ class ActivityForm {
             this.activityTypeChoices.destroy();
             this.activityTypeChoices = null;
         }
-        
+
         this.modal.style.display = 'none';
     }
 }

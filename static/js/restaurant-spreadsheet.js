@@ -6,13 +6,13 @@ class RestaurantSpreadsheet {
         this.containerId = containerId;
         this.hotInstance = null;
         this.data = [];
-        
+
         this.initializeSpreadsheet();
     }
 
     initializeSpreadsheet() {
         const container = document.getElementById(this.containerId);
-        
+
         const config = {
             data: [],
             licenseKey: 'non-commercial-and-evaluation',
@@ -20,31 +20,31 @@ class RestaurantSpreadsheet {
             width: '100%',
             colHeaders: ['ID', 'Name', 'Location', 'Food Type', 'Price'],
             columns: [
-                { 
+                {
                     data: 'id',
                     type: 'numeric',
                     readOnly: true,
                     width: 80
                 },
-                { 
+                {
                     data: 'name',
                     type: 'text',
                     width: 300,
                     validator: this.requiredValidator
                 },
-                { 
+                {
                     data: 'location',
                     type: 'text',
                     width: 200,
                     validator: this.requiredValidator
                 },
-                { 
+                {
                     data: 'type',
                     type: 'text',
                     width: 150,
                     validator: this.requiredValidator
                 },
-                { 
+                {
                     data: 'price',
                     type: 'numeric',
                     numericFormat: {
@@ -63,7 +63,7 @@ class RestaurantSpreadsheet {
                         name: 'Insert row above'
                     },
                     'row_below': {
-                        name: 'Insert row below'  
+                        name: 'Insert row below'
                     },
                     'remove_row': {
                         name: 'Delete row'
@@ -103,11 +103,11 @@ class RestaurantSpreadsheet {
     async loadData() {
         try {
             this.showLoading(true);
-            
+
             const restaurants = await apiClient.getRestaurants();
             this.data = restaurants;
             this.hotInstance.loadData(this.data);
-            
+
             this.showLoading(false);
         } catch (error) {
             console.error('Failed to load restaurants:', error);
@@ -121,33 +121,33 @@ class RestaurantSpreadsheet {
      */
     async onCellChange(changes, source) {
         if (source === 'loadData') return;
-        
+
         for (const change of changes) {
             const [row, prop, oldValue, newValue] = change;
-            
+
             if (oldValue === newValue) continue;
-            
+
             const rowData = this.hotInstance.getDataAtRow(row);
             const restaurantId = rowData[0]; // ID is in first column
-            
+
             if (!restaurantId) {
                 // Skip rows without ID (shouldn't happen with modal approach)
                 continue;
             }
-            
+
             try {
                 // Prepare update data
                 const updateData = {};
                 updateData[prop] = newValue;
-                
+
                 // The 'type' field is already correctly named for the API
-                
+
                 await apiClient.updateRestaurant(restaurantId, updateData);
-                
+
             } catch (error) {
                 console.error('Failed to update restaurant:', error);
                 this.showError(`Failed to update restaurant: ${error.message}`);
-                
+
                 // Revert the change
                 this.hotInstance.setDataAtCell(row, this.hotInstance.propToCol(prop), oldValue);
             }
@@ -160,15 +160,15 @@ class RestaurantSpreadsheet {
     beforeRowRemove(index, amount, physicalRows, source) {
         // Store the restaurants that will be deleted
         this.restaurantsToDelete = [];
-        
+
         for (const physicalRow of physicalRows) {
             // Get the actual displayed row data at the time of deletion
             const rowData = this.hotInstance.getDataAtRow(physicalRow);
-            
+
             if (rowData && rowData[0]) { // ID is in column 0
                 const restaurantId = rowData[0];
                 const restaurantName = rowData[1]; // Name is in column 1
-                
+
                 this.restaurantsToDelete.push({
                     id: restaurantId,
                     name: restaurantName,
@@ -185,7 +185,7 @@ class RestaurantSpreadsheet {
         if (!this.restaurantsToDelete || this.restaurantsToDelete.length === 0) {
             return;
         }
-        
+
         // Delete each restaurant from the backend
         for (const restaurant of this.restaurantsToDelete) {
             try {
@@ -198,10 +198,10 @@ class RestaurantSpreadsheet {
                 return;
             }
         }
-        
+
         // Clear the temporary storage
         this.restaurantsToDelete = [];
-        
+
         // Refresh data to reflect the changes
         await this.loadData();
     }
