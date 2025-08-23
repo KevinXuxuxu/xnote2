@@ -88,7 +88,7 @@ class EventSpreadsheet {
                     data: 'lunch.1',
                     type: 'text',
                     readOnly: true,
-                    width: 200,
+                    width: 100,
                     renderer: this.mealRenderer.bind(this)
                 },
                 {
@@ -102,14 +102,14 @@ class EventSpreadsheet {
                     data: 'dinner.1',
                     type: 'text',
                     readOnly: true,
-                    width: 200,
+                    width: 100,
                     renderer: this.mealRenderer.bind(this)
                 },
                 {
                     data: 'drinks',
                     type: 'text',
                     readOnly: true,
-                    width: 150,
+                    width: 100,
                     renderer: this.drinkRenderer.bind(this)
                 },
                 ...Array.from({ length: 10 }, (_, i) => ({
