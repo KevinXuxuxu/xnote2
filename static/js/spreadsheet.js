@@ -406,7 +406,37 @@ class EventSpreadsheet {
             }
         });
 
+        // Sort by display string length (longer first)
+        merged.sort((a, b) => {
+            const aDisplayLength = this.getMealDisplayLength(a);
+            const bDisplayLength = this.getMealDisplayLength(b);
+            return bDisplayLength - aDisplayLength;
+        });
+
         return merged;
+    }
+
+    /**
+     * Calculate display string length for a meal (used for sorting)
+     */
+    getMealDisplayLength(meal) {
+        let displayText = '';
+
+        // Add people if present
+        const formattedPeople = window.utils.formatPeople(meal.people);
+        if (formattedPeople) {
+            displayText += formattedPeople + ' ';
+        }
+
+        // Add food name
+        displayText += meal.name || '';
+
+        // Add notes if present
+        if (meal.notes && meal.notes.trim()) {
+            displayText += ' (' + meal.notes + ')';
+        }
+
+        return displayText.length;
     }
 
     /**
