@@ -109,7 +109,7 @@ class EventSpreadsheet {
                     data: 'drinks',
                     type: 'text',
                     readOnly: true,
-                    width: 100,
+                    width: 130,
                     renderer: this.drinkRenderer.bind(this)
                 },
                 ...Array.from({ length: 10 }, (_, i) => ({

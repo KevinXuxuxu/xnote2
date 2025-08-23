@@ -383,90 +383,90 @@ body {
     /* Orange for Sunday */
 }
 
-/* Column category borders - thicker borders between sections */
+/* Column category borders - thicker borders between sections (daily view only) */
 /* Border after Day column (before breakfast) */
-.ht_master .htCore tbody tr td:nth-child(2) {
-    border-right: 2px solid #000 !important;
+.daily-view .ht_master .htCore tbody tr td:nth-child(2) {
+    border-right: 1px solid #000 !important;
 }
 
 /* Border after Breakfast 2 column (before lunch) */
-.ht_master .htCore tbody tr td:nth-child(4) {
-    border-right: 2px solid #000 !important;
+.daily-view .ht_master .htCore tbody tr td:nth-child(4) {
+    border-right: 1px solid #000 !important;
 }
 
 /* Border after Lunch 2 column (before dinner) */
-.ht_master .htCore tbody tr td:nth-child(6) {
-    border-right: 2px solid #000 !important;
+.daily-view .ht_master .htCore tbody tr td:nth-child(6) {
+    border-right: 1px solid #000 !important;
 }
 
 /* Border after Dinner 2 column (before drinks) */
-.ht_master .htCore tbody tr td:nth-child(8) {
-    border-right: 2px solid #000 !important;
+.daily-view .ht_master .htCore tbody tr td:nth-child(8) {
+    border-right: 1px solid #000 !important;
 }
 
 /* Border after Drinks column (before events) */
-.ht_master .htCore tbody tr td:nth-child(9) {
-    border-right: 2px solid #000 !important;
+.daily-view .ht_master .htCore tbody tr td:nth-child(9) {
+    border-right: 1px solid #000 !important;
 }
 
-/* Header-specific styles - comprehensive selectors for Handsontable headers */
+/* Header-specific styles - comprehensive selectors for Handsontable headers (daily view only) */
 /* Border after Day column (before breakfast) */
-.ht_master .htCore thead tr th:nth-child(2),
-.ht_master .htCore .htCore thead tr th:nth-child(2),
-.ht_master .wtHider .wtHolder .wtTable thead tr th:nth-child(2),
-.handsontable .htCore thead tr th:nth-child(2),
-.handsontable thead tr th:nth-child(2),
-.ht_master thead tr th:nth-child(2),
-table.htCore thead tr th:nth-child(2) {
-    border-right: 2px solid #000 !important;
+.daily-view .ht_master .htCore thead tr th:nth-child(2),
+.daily-view .ht_master .htCore .htCore thead tr th:nth-child(2),
+.daily-view .ht_master .wtHider .wtHolder .wtTable thead tr th:nth-child(2),
+.daily-view .handsontable .htCore thead tr th:nth-child(2),
+.daily-view .handsontable thead tr th:nth-child(2),
+.daily-view .ht_master thead tr th:nth-child(2),
+.daily-view table.htCore thead tr th:nth-child(2) {
+    border-right: 1px solid #000 !important;
     text-align: center !important;
 }
 
 /* Border after Breakfast 2 column (before lunch) */
-.ht_master .htCore thead tr th:nth-child(4),
-.ht_master .htCore .htCore thead tr th:nth-child(4),
-.ht_master .wtHider .wtHolder .wtTable thead tr th:nth-child(4),
-.handsontable .htCore thead tr th:nth-child(4),
-.handsontable thead tr th:nth-child(4),
-.ht_master thead tr th:nth-child(4),
-table.htCore thead tr th:nth-child(4) {
-    border-right: 2px solid #000 !important;
+.daily-view .ht_master .htCore thead tr th:nth-child(4),
+.daily-view .ht_master .htCore .htCore thead tr th:nth-child(4),
+.daily-view .ht_master .wtHider .wtHolder .wtTable thead tr th:nth-child(4),
+.daily-view .handsontable .htCore thead tr th:nth-child(4),
+.daily-view .handsontable thead tr th:nth-child(4),
+.daily-view .ht_master thead tr th:nth-child(4),
+.daily-view table.htCore thead tr th:nth-child(4) {
+    border-right: 1px solid #000 !important;
     text-align: center !important;
 }
 
 /* Border after Lunch 2 column (before dinner) */
-.ht_master .htCore thead tr th:nth-child(6),
-.ht_master .htCore .htCore thead tr th:nth-child(6),
-.ht_master .wtHider .wtHolder .wtTable thead tr th:nth-child(6),
-.handsontable .htCore thead tr th:nth-child(6),
-.handsontable thead tr th:nth-child(6),
-.ht_master thead tr th:nth-child(6),
-table.htCore thead tr th:nth-child(6) {
-    border-right: 2px solid #000 !important;
+.daily-view .ht_master .htCore thead tr th:nth-child(6),
+.daily-view .ht_master .htCore .htCore thead tr th:nth-child(6),
+.daily-view .ht_master .wtHider .wtHolder .wtTable thead tr th:nth-child(6),
+.daily-view .handsontable .htCore thead tr th:nth-child(6),
+.daily-view .handsontable thead tr th:nth-child(6),
+.daily-view .ht_master thead tr th:nth-child(6),
+.daily-view table.htCore thead tr th:nth-child(6) {
+    border-right: 1px solid #000 !important;
     text-align: center !important;
 }
 
 /* Border after Dinner 2 column (before drinks) */
-.ht_master .htCore thead tr th:nth-child(8),
-.ht_master .htCore .htCore thead tr th:nth-child(8),
-.ht_master .wtHider .wtHolder .wtTable thead tr th:nth-child(8),
-.handsontable .htCore thead tr th:nth-child(8),
-.handsontable thead tr th:nth-child(8),
-.ht_master thead tr th:nth-child(8),
-table.htCore thead tr th:nth-child(8) {
-    border-right: 2px solid #000 !important;
+.daily-view .ht_master .htCore thead tr th:nth-child(8),
+.daily-view .ht_master .htCore .htCore thead tr th:nth-child(8),
+.daily-view .ht_master .wtHider .wtHolder .wtTable thead tr th:nth-child(8),
+.daily-view .handsontable .htCore thead tr th:nth-child(8),
+.daily-view .handsontable thead tr th:nth-child(8),
+.daily-view .ht_master thead tr th:nth-child(8),
+.daily-view table.htCore thead tr th:nth-child(8) {
+    border-right: 1px solid #000 !important;
     text-align: center !important;
 }
 
 /* Border after Drinks column (before events) */
-.ht_master .htCore thead tr th:nth-child(9),
-.ht_master .htCore .htCore thead tr th:nth-child(9),
-.ht_master .wtHider .wtHolder .wtTable thead tr th:nth-child(9),
-.handsontable .htCore thead tr th:nth-child(9),
-.handsontable thead tr th:nth-child(9),
-.ht_master thead tr th:nth-child(9),
-table.htCore thead tr th:nth-child(9) {
-    border-right: 2px solid #000 !important;
+.daily-view .ht_master .htCore thead tr th:nth-child(9),
+.daily-view .ht_master .htCore .htCore thead tr th:nth-child(9),
+.daily-view .ht_master .wtHider .wtHolder .wtTable thead tr th:nth-child(9),
+.daily-view .handsontable .htCore thead tr th:nth-child(9),
+.daily-view .handsontable thead tr th:nth-child(9),
+.daily-view .ht_master thead tr th:nth-child(9),
+.daily-view table.htCore thead tr th:nth-child(9) {
+    border-right: 1px solid #000 !important;
     text-align: center !important;
 }
 
@@ -720,4 +720,11 @@ table.htCore thead tr th,
     color: #0c5460;
     background-color: #d1ecf1;
     border-color: #bee5eb;
+}
+
+/* Override default Handsontable border colors to grey */
+.handsontable {
+    --ht-border-color: #ccc;
+    --ht-cell-vertical-border-color: #ccc;
+    --ht-cell-horizontal-border-color: #ccc;
 }
