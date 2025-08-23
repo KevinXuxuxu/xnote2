@@ -36,7 +36,8 @@ class ActivitySpreadsheet {
                     data: 'type',
                     type: 'text',
                     width: 200,
-                    validator: this.requiredValidator
+                    validator: this.requiredValidator,
+                    renderer: this.activityTypeRenderer.bind(this)
                 }
             ],
             rowHeaders: false,
@@ -70,6 +71,24 @@ class ActivitySpreadsheet {
 
         this.hotInstance = new Handsontable(container, config);
         this.loadData();
+    }
+
+    /**
+     * Custom renderer for activity type cells with coloring
+     */
+    activityTypeRenderer(instance, td, row, col, prop, value, cellProperties) {
+        Handsontable.renderers.TextRenderer.apply(this, arguments);
+
+        // Clear existing activity type classes
+        td.className = td.className || '';
+        td.className = td.className.replace(/activity-type-\w+/g, '');
+
+        // Add CSS class based on activity type
+        if (value) {
+            // Normalize activity type for CSS class (replace spaces with hyphens)
+            const normalizedType = value.replace(/\s+/g, '-');
+            td.className += ` activity-type-${normalizedType}`;
+        }
     }
 
     /**
