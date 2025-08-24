@@ -727,4 +727,6 @@ table.htCore thead tr th,
     --ht-border-color: #ccc;
     --ht-cell-vertical-border-color: #ccc;
     --ht-cell-horizontal-border-color: #ccc;
+    --ht-cell-vertical-padding: 2px;
+    --ht-cell-horizontal-padding: 4px;
 }

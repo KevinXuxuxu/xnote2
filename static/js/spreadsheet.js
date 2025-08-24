@@ -53,14 +53,14 @@ class EventSpreadsheet {
                     type: 'date',
                     dateFormat: 'YYYY-MM-DD',
                     readOnly: true,
-                    width: 110,
+                    width: 100,
                     renderer: this.dateRenderer.bind(this)
                 },
                 {
                     data: 'day_of_week',
                     type: 'text',
                     readOnly: true,
-                    width: 50,
+                    width: 45,
                     renderer: this.dayRenderer.bind(this)
                 },
                 {
@@ -109,7 +109,7 @@ class EventSpreadsheet {
                     data: 'drinks',
                     type: 'text',
                     readOnly: true,
-                    width: 130,
+                    width: 110,
                     renderer: this.drinkRenderer.bind(this)
                 },
                 ...Array.from({ length: 10 }, (_, i) => ({
