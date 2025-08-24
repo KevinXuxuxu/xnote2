@@ -24,11 +24,15 @@ document.addEventListener('DOMContentLoaded', function () {
         if (urlParams.endDate) {
             document.getElementById('endDate').value = urlParams.endDate;
         }
+        if (urlParams.searchText) {
+            document.getElementById('searchText').value = urlParams.searchText;
+        }
 
         // Apply the filters from URL
         const filters = {
             startDate: urlParams.startDate || window.dateUtils.getDaysAgoLocal(30),
-            endDate: urlParams.endDate || window.dateUtils.getTodayLocal()
+            endDate: urlParams.endDate || window.dateUtils.getTodayLocal(),
+            searchText: urlParams.searchText || ''
         };
         window.eventSpreadsheet.setFilters(filters);
     });
@@ -58,17 +62,31 @@ function setupFilters() {
     document.getElementById('applyFilters').onclick = () => {
         const startDate = document.getElementById('startDate').value;
         const endDate = document.getElementById('endDate').value;
+        const searchText = document.getElementById('searchText').value;
 
         // Update URL with new filter parameters
-        updateUrlFilters(startDate, endDate);
+        updateUrlFilters(startDate, endDate, searchText);
 
         const filters = {
             startDate: startDate,
-            endDate: endDate
+            endDate: endDate,
+            searchText: searchText
         };
 
         window.eventSpreadsheet.setFilters(filters);
     };
+
+    // Add real-time search filtering with debounce
+    const searchInput = document.getElementById('searchText');
+    const debouncedSearch = window.utils.debounce(() => {
+        const searchText = searchInput.value;
+        const filters = {
+            searchText: searchText
+        };
+        window.eventSpreadsheet.setFilters(filters);
+    }, 300);
+
+    searchInput.addEventListener('input', debouncedSearch);
 }
 
 
@@ -89,7 +107,12 @@ function initializeDateFilters() {
         document.getElementById('endDate').value = defaultEnd;
 
         // Update URL with defaults (without triggering a reload)
-        updateUrlFilters(defaultStart, defaultEnd, false);
+        updateUrlFilters(defaultStart, defaultEnd, '', false);
+    }
+
+    // Initialize search text from URL
+    if (urlParams.searchText) {
+        document.getElementById('searchText').value = urlParams.searchText;
     }
 }
 
@@ -102,11 +125,12 @@ function getUrlFilters() {
     const urlParams = new URLSearchParams(window.location.search);
     return {
         startDate: urlParams.get('startDate'),
-        endDate: urlParams.get('endDate')
+        endDate: urlParams.get('endDate'),
+        searchText: urlParams.get('searchText')
     };
 }
 
-function updateUrlFilters(startDate, endDate, pushState = true) {
+function updateUrlFilters(startDate, endDate, searchText, pushState = true) {
     const url = new URL(window.location);
 
     if (startDate) {
@@ -119,6 +143,12 @@ function updateUrlFilters(startDate, endDate, pushState = true) {
         url.searchParams.set('endDate', endDate);
     } else {
         url.searchParams.delete('endDate');
+    }
+
+    if (searchText && searchText.trim()) {
+        url.searchParams.set('searchText', searchText.trim());
+    } else {
+        url.searchParams.delete('searchText');
     }
 
     if (pushState) {

@@ -12,7 +12,8 @@ class EventSpreadsheet {
         const urlParams = new URLSearchParams(window.location.search);
         this.currentFilters = {
             startDate: urlParams.get('startDate') || null,
-            endDate: urlParams.get('endDate') || null
+            endDate: urlParams.get('endDate') || null,
+            searchText: urlParams.get('searchText') || ''
         };
 
         this.initializeSpreadsheet();
@@ -464,10 +465,74 @@ class EventSpreadsheet {
      * Apply current filters to data
      */
     applyFilters() {
-        // Date range filtering is now handled by the backend API
-        // No additional client-side filtering needed for daily view
+        // Date range filtering is handled by the backend API
+        // Apply client-side text search filtering
         this.filteredData = [...this.data];
+        
+        if (this.currentFilters.searchText && this.currentFilters.searchText.trim()) {
+            const searchTerm = this.currentFilters.searchText.toLowerCase().trim();
+            this.filteredData = this.filteredData.filter(row => this.rowMatchesSearch(row, searchTerm));
+        }
+        
         this.hotInstance.loadData(this.filteredData);
+    }
+
+    /**
+     * Check if a row matches the search term by checking all displayable content
+     */
+    rowMatchesSearch(row, searchTerm) {
+        // Check date and day
+        if (row.date && row.date.toLowerCase().includes(searchTerm)) return true;
+        if (row.day_of_week && row.day_of_week.toLowerCase().includes(searchTerm)) return true;
+
+        // Check meals (breakfast, lunch, dinner)
+        for (const mealTime of ['breakfast', 'lunch', 'dinner']) {
+            if (row[mealTime] && Array.isArray(row[mealTime])) {
+                for (const meal of row[mealTime]) {
+                    const displayText = this.getMealDisplayText(meal).toLowerCase();
+                    if (displayText.includes(searchTerm)) return true;
+                }
+            }
+        }
+
+        // Check drinks
+        if (row.drinks && Array.isArray(row.drinks)) {
+            for (const drink of row.drinks) {
+                if (drink.toLowerCase().includes(searchTerm)) return true;
+            }
+        }
+
+        // Check events
+        if (row.events && Array.isArray(row.events)) {
+            for (const event of row.events) {
+                if (event.text && event.text.toLowerCase().includes(searchTerm)) return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Get display text for a meal (same logic as mealRenderer)
+     */
+    getMealDisplayText(meal) {
+        let displayText = '';
+
+        // Add people if present
+        const formattedPeople = window.utils.formatPeople(meal.people);
+        if (formattedPeople) {
+            displayText += formattedPeople + ' ';
+        }
+
+        // Add food name
+        displayText += meal.name || '';
+
+        // Add notes if present
+        if (meal.notes && meal.notes.trim()) {
+            displayText += ' (' + meal.notes + ')';
+        }
+
+        return displayText;
     }
 
     /**
