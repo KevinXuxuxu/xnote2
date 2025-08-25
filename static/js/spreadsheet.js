@@ -158,6 +158,44 @@ class EventSpreadsheet {
                             const col = selection[0].start.col;
                             this.deleteEvent(row, col);
                         }
+                    },
+                    'sp2': '---------',
+                    'delete_meal': {
+                        name: 'Delete Meal',
+                        hidden: () => {
+                            const selection = this.hotInstance.getSelected();
+                            if (!selection || !selection[0]) return true;
+
+                            const row = selection[0][0];
+                            const col = selection[0][1];
+
+                            // Hide if not a meal cell (columns 2-7: breakfast.0, breakfast.1, lunch.0, lunch.1, dinner.0, dinner.1)
+                            if (col < 2 || col > 7) return true;
+
+                            const rowData = this.filteredData[row];
+
+                            // Determine meal time and index
+                            let mealTime, mealIndex;
+                            if (col === 2 || col === 3) {
+                                mealTime = 'breakfast';
+                                mealIndex = col - 2;
+                            } else if (col === 4 || col === 5) {
+                                mealTime = 'lunch';
+                                mealIndex = col - 4;
+                            } else {
+                                mealTime = 'dinner';
+                                mealIndex = col - 6;
+                            }
+
+                            // Hide if no meal in this cell
+                            return !(rowData && rowData[mealTime] && rowData[mealTime][mealIndex] &&
+                                rowData[mealTime][mealIndex].ids && rowData[mealTime][mealIndex].ids.length > 0);
+                        },
+                        callback: (key, selection) => {
+                            const row = selection[0].start.row;
+                            const col = selection[0].start.col;
+                            this.deleteMeal(row, col);
+                        }
                     }
                 }
             },
@@ -463,10 +501,19 @@ class EventSpreadsheet {
         // Just extract food names and combine them
         const foodNames = meals.map(meal => meal.name).filter(name => name.length > 0);
 
+        // Combine all IDs from all meals in the group
+        const allIds = meals.reduce((ids, meal) => {
+            if (meal.ids && Array.isArray(meal.ids)) {
+                ids.push(...meal.ids);
+            }
+            return ids;
+        }, []);
+
         // Use the first meal as template since all attributes should be identical
         const template = meals[0];
 
         return {
+            ids: allIds,                 // Combined IDs from all meals in group
             name: foodNames.join(', '),  // Combine food names with commas
             people: template.people,     // Same people for all in group
             notes: template.notes,       // Same notes for all in group
@@ -633,6 +680,79 @@ class EventSpreadsheet {
         } catch (error) {
             console.error('Failed to delete event:', error);
             this.showError(`Failed to delete event: ${error.message}`);
+            this.showLoading(false);
+        }
+    }
+
+    /**
+     * Delete meals from the selected cell
+     */
+    async deleteMeal(row, col) {
+        const rowData = this.filteredData[row];
+
+        // Determine meal time and index
+        let mealTime, mealIndex;
+        if (col === 2 || col === 3) {
+            mealTime = 'breakfast';
+            mealIndex = col - 2;
+        } else if (col === 4 || col === 5) {
+            mealTime = 'lunch';
+            mealIndex = col - 4;
+        } else if (col === 6 || col === 7) {
+            mealTime = 'dinner';
+            mealIndex = col - 6;
+        } else {
+            this.showError('Invalid meal cell');
+            return;
+        }
+
+        if (!rowData || !rowData[mealTime] || !rowData[mealTime][mealIndex]) {
+            this.showError('No meal found in this cell');
+            return;
+        }
+
+        const meal = rowData[mealTime][mealIndex];
+        if (!meal.ids || meal.ids.length === 0) {
+            this.showError('Cannot delete meal: no IDs found');
+            return;
+        }
+
+        // Show confirmation dialog with count
+        const mealText = meal.name || 'this meal';
+        const mealCount = meal.ids.length;
+        const pluralText = mealCount === 1 ? 'meal' : 'meals';
+        const confirmed = confirm(`Are you sure you want to delete ${mealCount} ${pluralText} in "${mealText}"?`);
+
+        if (!confirmed) {
+            return;
+        }
+
+        try {
+            this.showLoading(true);
+
+            // Check if batch delete method is available
+            if (typeof apiClient.deleteMealsBatch === 'function') {
+                // Delete meals via batch API
+                await apiClient.deleteMealsBatch(meal.ids);
+            } else {
+                console.warn('Batch delete not available, falling back to individual deletes');
+                // Fallback: delete meals individually
+                for (const mealId of meal.ids) {
+                    await apiClient.deleteMeal(mealId);
+                }
+            }
+
+            // Refresh data to reflect the changes
+            await this.loadData();
+
+            this.showLoading(false);
+
+            // Show success message
+            window.utils.showToast(`${mealCount} ${pluralText} deleted successfully`, 'success');
+
+        } catch (error) {
+            console.error('Failed to delete meals:', error);
+            this.showError(`Failed to delete meals: ${error.message}`);
             this.showLoading(false);
         }
     }

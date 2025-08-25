@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct MealItem {
+    pub ids: Vec<i32>,         // Meal IDs (multiple for merged meals)
     pub name: String,          // Recipe/product/restaurant name
     pub people: String,        // Comma-separated people names
     pub notes: Option<String>, // Notes if any

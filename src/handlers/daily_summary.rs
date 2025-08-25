@@ -42,6 +42,7 @@ async fn build_daily_summaries(
         ),
         meal_aggregated AS (
             SELECT 
+                m.id as meal_id,
                 m.date,
                 m."time" as meal_time,
                 CASE 
@@ -163,6 +164,7 @@ async fn build_daily_summaries(
             SELECT 
                 date,
                 array_agg(json_build_object(
+                    'ids', array[meal_id],
                     'name', food_source_name,
                     'people', COALESCE(array_to_string(people_names, ', '), ''),
                     'notes', notes,
@@ -176,6 +178,7 @@ async fn build_daily_summaries(
             SELECT 
                 date,
                 array_agg(json_build_object(
+                    'ids', array[meal_id],
                     'name', food_source_name,
                     'people', COALESCE(array_to_string(people_names, ', '), ''),
                     'notes', notes,
@@ -189,6 +192,7 @@ async fn build_daily_summaries(
             SELECT 
                 date,
                 array_agg(json_build_object(
+                    'ids', array[meal_id],
                     'name', food_source_name,
                     'people', COALESCE(array_to_string(people_names, ', '), ''),
                     'notes', notes,

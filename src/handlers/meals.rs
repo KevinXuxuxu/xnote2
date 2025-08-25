@@ -2,6 +2,7 @@ use crate::models::detail::{MealDetail, MealFoodSource};
 use crate::models::meal::{CreateMeal, CreateMealFoodSource, CreateMealResponse, Meal};
 use crate::models::{people::People, product::Product, recipe::Recipe, restaurant::Restaurant};
 use actix_web::{web, HttpResponse, Result};
+use serde::Deserialize;
 use sqlx::PgPool;
 
 pub fn configure(cfg: &mut web::ServiceConfig) {
@@ -16,7 +17,8 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
             .route(web::put().to(update_meal))
             .route(web::delete().to(delete_meal)),
     )
-    .service(web::resource("/meals/{id}/details").route(web::get().to(get_meal_details)));
+    .service(web::resource("/meals/{id}/details").route(web::get().to(get_meal_details)))
+    .service(web::resource("/meals/batch/delete").route(web::post().to(delete_meals_batch)));
 }
 
 async fn get_meals(pool: web::Data<PgPool>) -> Result<HttpResponse> {
@@ -186,9 +188,91 @@ async fn update_meal(_pool: web::Data<PgPool>, _path: web::Path<i32>) -> Result<
     })))
 }
 
-async fn delete_meal(_pool: web::Data<PgPool>, _path: web::Path<i32>) -> Result<HttpResponse> {
+async fn delete_meal(pool: web::Data<PgPool>, path: web::Path<i32>) -> Result<HttpResponse> {
+    let meal_id = path.into_inner();
+
+    let mut tx = match pool.begin().await {
+        Ok(tx) => tx,
+        Err(e) => {
+            log::error!("Failed to start transaction: {}", e);
+            return Ok(HttpResponse::InternalServerError().json(serde_json::json!({
+                "error": "Failed to delete meal"
+            })));
+        }
+    };
+
+    // First check if the meal exists
+    match sqlx::query!("SELECT id FROM meal WHERE id = $1", meal_id)
+        .fetch_optional(&mut *tx)
+        .await
+    {
+        Ok(Some(_)) => {
+            // Meal exists, continue with deletion
+        }
+        Ok(None) => {
+            return Ok(HttpResponse::NotFound().json(serde_json::json!({
+                "error": "Meal not found"
+            })));
+        }
+        Err(e) => {
+            log::error!("Failed to check if meal exists: {}", e);
+            if let Err(rollback_err) = tx.rollback().await {
+                log::error!("Failed to rollback transaction: {}", rollback_err);
+            }
+            return Ok(HttpResponse::InternalServerError().json(serde_json::json!({
+                "error": "Failed to delete meal"
+            })));
+        }
+    }
+
+    // Delete meal relationships (CASCADE should handle this, but being explicit)
+    let relationship_tables = [
+        "meal_people",
+        "meal_recipe",
+        "meal_product",
+        "meal_restaurant",
+    ];
+
+    for table in relationship_tables {
+        if let Err(e) = sqlx::query(&format!("DELETE FROM {} WHERE meal = $1", table))
+            .bind(meal_id)
+            .execute(&mut *tx)
+            .await
+        {
+            log::error!("Failed to delete {} relationships: {}", table, e);
+            if let Err(rollback_err) = tx.rollback().await {
+                log::error!("Failed to rollback transaction: {}", rollback_err);
+            }
+            return Ok(HttpResponse::InternalServerError().json(serde_json::json!({
+                "error": "Failed to delete meal"
+            })));
+        }
+    }
+
+    // Delete the meal itself
+    if let Err(e) = sqlx::query!("DELETE FROM meal WHERE id = $1", meal_id)
+        .execute(&mut *tx)
+        .await
+    {
+        log::error!("Failed to delete meal: {}", e);
+        if let Err(rollback_err) = tx.rollback().await {
+            log::error!("Failed to rollback transaction: {}", rollback_err);
+        }
+        return Ok(HttpResponse::InternalServerError().json(serde_json::json!({
+            "error": "Failed to delete meal"
+        })));
+    }
+
+    // Commit the transaction
+    if let Err(e) = tx.commit().await {
+        log::error!("Failed to commit transaction: {}", e);
+        return Ok(HttpResponse::InternalServerError().json(serde_json::json!({
+            "error": "Failed to delete meal"
+        })));
+    }
+
     Ok(HttpResponse::Ok().json(serde_json::json!({
-        "message": "Delete meal - TODO: implement"
+        "message": "Meal deleted successfully"
     })))
 }
 
@@ -319,4 +403,117 @@ async fn get_meal_details(pool: web::Data<PgPool>, path: web::Path<i32>) -> Resu
     };
 
     Ok(HttpResponse::Ok().json(meal_detail))
+}
+
+#[derive(Debug, Deserialize)]
+pub struct BatchDeleteMealsRequest {
+    pub meal_ids: Vec<i32>,
+}
+
+async fn delete_meals_batch(
+    pool: web::Data<PgPool>,
+    request: web::Json<BatchDeleteMealsRequest>,
+) -> Result<HttpResponse> {
+    if request.meal_ids.is_empty() {
+        return Ok(HttpResponse::BadRequest().json(serde_json::json!({
+            "error": "No meal IDs provided"
+        })));
+    }
+
+    let mut tx = match pool.begin().await {
+        Ok(tx) => tx,
+        Err(e) => {
+            log::error!("Failed to start transaction: {}", e);
+            return Ok(HttpResponse::InternalServerError().json(serde_json::json!({
+                "error": "Failed to delete meals"
+            })));
+        }
+    };
+
+    let mut deleted_count = 0;
+
+    for meal_id in &request.meal_ids {
+        // Check if meal exists
+        let meal_exists = match sqlx::query!("SELECT id FROM meal WHERE id = $1", meal_id)
+            .fetch_optional(&mut *tx)
+            .await
+        {
+            Ok(Some(_)) => true,
+            Ok(None) => {
+                log::warn!("Meal ID {} not found, skipping", meal_id);
+                continue;
+            }
+            Err(e) => {
+                log::error!("Failed to check if meal {} exists: {}", meal_id, e);
+                if let Err(rollback_err) = tx.rollback().await {
+                    log::error!("Failed to rollback transaction: {}", rollback_err);
+                }
+                return Ok(HttpResponse::InternalServerError().json(serde_json::json!({
+                    "error": "Failed to delete meals"
+                })));
+            }
+        };
+
+        if !meal_exists {
+            continue;
+        }
+
+        // Delete meal relationships
+        let relationship_tables = [
+            "meal_people",
+            "meal_recipe",
+            "meal_product",
+            "meal_restaurant",
+        ];
+
+        for table in relationship_tables {
+            if let Err(e) = sqlx::query(&format!("DELETE FROM {} WHERE meal = $1", table))
+                .bind(meal_id)
+                .execute(&mut *tx)
+                .await
+            {
+                log::error!(
+                    "Failed to delete {} relationships for meal {}: {}",
+                    table,
+                    meal_id,
+                    e
+                );
+                if let Err(rollback_err) = tx.rollback().await {
+                    log::error!("Failed to rollback transaction: {}", rollback_err);
+                }
+                return Ok(HttpResponse::InternalServerError().json(serde_json::json!({
+                    "error": "Failed to delete meals"
+                })));
+            }
+        }
+
+        // Delete the meal itself
+        if let Err(e) = sqlx::query!("DELETE FROM meal WHERE id = $1", meal_id)
+            .execute(&mut *tx)
+            .await
+        {
+            log::error!("Failed to delete meal {}: {}", meal_id, e);
+            if let Err(rollback_err) = tx.rollback().await {
+                log::error!("Failed to rollback transaction: {}", rollback_err);
+            }
+            return Ok(HttpResponse::InternalServerError().json(serde_json::json!({
+                "error": "Failed to delete meals"
+            })));
+        }
+
+        deleted_count += 1;
+    }
+
+    // Commit the transaction
+    if let Err(e) = tx.commit().await {
+        log::error!("Failed to commit transaction: {}", e);
+        return Ok(HttpResponse::InternalServerError().json(serde_json::json!({
+            "error": "Failed to delete meals"
+        })));
+    }
+
+    Ok(HttpResponse::Ok().json(serde_json::json!({
+        "message": format!("{} meals deleted successfully", deleted_count),
+        "deleted_count": deleted_count
+    })))
 }

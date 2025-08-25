@@ -67,6 +67,13 @@ class ApiClient {
         });
     }
 
+    async deleteMealsBatch(mealIds) {
+        return this.request('/meals/batch/delete', {
+            method: 'POST',
+            body: JSON.stringify({ meal_ids: mealIds })
+        });
+    }
+
     // Events API
     async getEvents() {
         return this.request('/events');
