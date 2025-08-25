@@ -1,5 +1,5 @@
 use crate::models::daily_summary::{DailySummary, DailySummaryQuery, EventItem, MealItem};
-use actix_web::{HttpResponse, Result, web};
+use actix_web::{web, HttpResponse, Result};
 use chrono::NaiveDate;
 use sqlx::PgPool;
 
@@ -73,6 +73,7 @@ async fn build_daily_summaries(
         ),
         event_aggregated AS (
             SELECT 
+                e.id as event_id,
                 e.date,
                 a.name as activity_name,
                 a.type as activity_type,
@@ -96,6 +97,7 @@ async fn build_daily_summaries(
         ),
         event_formatted AS (
             SELECT 
+                event_id,
                 date,
                 TRIM(CONCAT_WS(' ',
                     CASE 
@@ -206,7 +208,7 @@ async fn build_daily_summaries(
         LEFT JOIN (
             SELECT 
                 date,
-                array_agg(json_build_object('text', formatted_event, 'type', activity_type)) as event_list
+                array_agg(json_build_object('id', event_id, 'text', formatted_event, 'type', activity_type)) as event_list
             FROM event_formatted
             GROUP BY date
         ) events ON dr.date = events.date

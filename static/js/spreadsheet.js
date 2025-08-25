@@ -127,21 +127,36 @@ class EventSpreadsheet {
             dropdownMenu: true,
             contextMenu: {
                 items: {
-                    'row_above': {
-                        name: 'Insert row above'
-                    },
-                    'row_below': {
-                        name: 'Insert row below'
-                    },
-                    'remove_row': {
-                        name: 'Delete row'
-                    },
-                    'hsep1': '---------',
                     'details': {
                         name: 'View/Edit Details',
                         callback: (key, selection) => {
                             const row = selection[0].start.row;
                             this.openDetails(row);
+                        }
+                    },
+                    'sp1': '---------',
+                    'delete_event': {
+                        name: 'Delete Event',
+                        hidden: () => {
+                            const selection = this.hotInstance.getSelected();
+                            if (!selection || !selection[0]) return true;
+
+                            const row = selection[0][0];
+                            const col = selection[0][1];
+
+                            // Hide if not an event cell (columns 9-18)
+                            if (col < 9 || col > 18) return true;
+
+                            const rowData = this.filteredData[row];
+                            const eventIndex = col - 9;
+
+                            // Hide if no event in this cell
+                            return !(rowData && rowData.events && rowData.events[eventIndex] && rowData.events[eventIndex].id);
+                        },
+                        callback: (key, selection) => {
+                            const row = selection[0].start.row;
+                            const col = selection[0].start.col;
+                            this.deleteEvent(row, col);
                         }
                     }
                 }
@@ -468,12 +483,12 @@ class EventSpreadsheet {
         // Date range filtering is handled by the backend API
         // Apply client-side text search filtering
         this.filteredData = [...this.data];
-        
+
         if (this.currentFilters.searchText && this.currentFilters.searchText.trim()) {
             const searchTerm = this.currentFilters.searchText.toLowerCase().trim();
             this.filteredData = this.filteredData.filter(row => this.rowMatchesSearch(row, searchTerm));
         }
-        
+
         this.hotInstance.loadData(this.filteredData);
     }
 
@@ -573,6 +588,53 @@ class EventSpreadsheet {
     onRowCreate(index, amount) {
         // Daily view is read-only - no row creation allowed
         return;
+    }
+
+    /**
+     * Delete an event from the selected cell
+     */
+    async deleteEvent(row, col) {
+        const rowData = this.filteredData[row];
+        const eventIndex = col - 9; // Convert column to event index
+
+        if (!rowData || !rowData.events || !rowData.events[eventIndex]) {
+            this.showError('No event found in this cell');
+            return;
+        }
+
+        const event = rowData.events[eventIndex];
+        if (!event.id) {
+            this.showError('Cannot delete event: no ID found');
+            return;
+        }
+
+        // Show confirmation dialog
+        const eventText = event.text || 'this event';
+        const confirmed = confirm(`Are you sure you want to delete "${eventText}"?`);
+
+        if (!confirmed) {
+            return;
+        }
+
+        try {
+            this.showLoading(true);
+
+            // Delete event via API
+            await apiClient.deleteEvent(event.id);
+
+            // Refresh data to reflect the changes
+            await this.loadData();
+
+            this.showLoading(false);
+
+            // Show success message
+            window.utils.showToast(`Event "${eventText}" deleted successfully`, 'success');
+
+        } catch (error) {
+            console.error('Failed to delete event:', error);
+            this.showError(`Failed to delete event: ${error.message}`);
+            this.showLoading(false);
+        }
     }
 
     /**

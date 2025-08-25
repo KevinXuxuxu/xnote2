@@ -12,6 +12,7 @@ pub struct MealItem {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct EventItem {
+    pub id: i32,
     pub text: String,
     #[serde(rename = "type")]
     pub activity_type: String,

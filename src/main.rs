@@ -1,5 +1,5 @@
 use actix_files as fs;
-use actix_web::{App, HttpResponse, HttpServer, Result, middleware::Logger, web};
+use actix_web::{middleware::Logger, web, App, HttpResponse, HttpServer, Result};
 use sqlx::PgPool;
 use std::env;
 

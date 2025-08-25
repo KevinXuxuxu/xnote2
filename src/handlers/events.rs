@@ -1,7 +1,7 @@
 use crate::models::detail::{ActivityDetail, EventDetail};
 use crate::models::event::{CreateEvent, CreateEventResponse, Event};
 use crate::models::people::People;
-use actix_web::{HttpResponse, Result, web};
+use actix_web::{web, HttpResponse, Result};
 use sqlx::PgPool;
 
 pub fn configure(cfg: &mut web::ServiceConfig) {
@@ -142,9 +142,81 @@ async fn update_event(_pool: web::Data<PgPool>, _path: web::Path<i32>) -> Result
     })))
 }
 
-async fn delete_event(_pool: web::Data<PgPool>, _path: web::Path<i32>) -> Result<HttpResponse> {
+async fn delete_event(pool: web::Data<PgPool>, path: web::Path<i32>) -> Result<HttpResponse> {
+    let event_id = path.into_inner();
+
+    let mut tx = match pool.begin().await {
+        Ok(tx) => tx,
+        Err(e) => {
+            log::error!("Failed to start transaction: {}", e);
+            return Ok(HttpResponse::InternalServerError().json(serde_json::json!({
+                "error": "Failed to delete event"
+            })));
+        }
+    };
+
+    // First check if the event exists
+    match sqlx::query!("SELECT id FROM event WHERE id = $1", event_id)
+        .fetch_optional(&mut *tx)
+        .await
+    {
+        Ok(Some(_)) => {
+            // Event exists, continue with deletion
+        }
+        Ok(None) => {
+            return Ok(HttpResponse::NotFound().json(serde_json::json!({
+                "error": "Event not found"
+            })));
+        }
+        Err(e) => {
+            log::error!("Failed to check if event exists: {}", e);
+            if let Err(rollback_err) = tx.rollback().await {
+                log::error!("Failed to rollback transaction: {}", rollback_err);
+            }
+            return Ok(HttpResponse::InternalServerError().json(serde_json::json!({
+                "error": "Failed to delete event"
+            })));
+        }
+    }
+
+    // Delete event_people relationships (will cascade automatically, but explicit is better)
+    if let Err(e) = sqlx::query!("DELETE FROM event_people WHERE event = $1", event_id)
+        .execute(&mut *tx)
+        .await
+    {
+        log::error!("Failed to delete event_people relationships: {}", e);
+        if let Err(rollback_err) = tx.rollback().await {
+            log::error!("Failed to rollback transaction: {}", rollback_err);
+        }
+        return Ok(HttpResponse::InternalServerError().json(serde_json::json!({
+            "error": "Failed to delete event"
+        })));
+    }
+
+    // Delete the event itself
+    if let Err(e) = sqlx::query!("DELETE FROM event WHERE id = $1", event_id)
+        .execute(&mut *tx)
+        .await
+    {
+        log::error!("Failed to delete event: {}", e);
+        if let Err(rollback_err) = tx.rollback().await {
+            log::error!("Failed to rollback transaction: {}", rollback_err);
+        }
+        return Ok(HttpResponse::InternalServerError().json(serde_json::json!({
+            "error": "Failed to delete event"
+        })));
+    }
+
+    // Commit the transaction
+    if let Err(e) = tx.commit().await {
+        log::error!("Failed to commit transaction: {}", e);
+        return Ok(HttpResponse::InternalServerError().json(serde_json::json!({
+            "error": "Failed to delete event"
+        })));
+    }
+
     Ok(HttpResponse::Ok().json(serde_json::json!({
-        "message": "Delete event - TODO: implement"
+        "message": "Event deleted successfully"
     })))
 }
 

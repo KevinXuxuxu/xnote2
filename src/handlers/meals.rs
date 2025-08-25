@@ -1,7 +1,7 @@
 use crate::models::detail::{MealDetail, MealFoodSource};
 use crate::models::meal::{CreateMeal, CreateMealFoodSource, CreateMealResponse, Meal};
 use crate::models::{people::People, product::Product, recipe::Recipe, restaurant::Restaurant};
-use actix_web::{HttpResponse, Result, web};
+use actix_web::{web, HttpResponse, Result};
 use sqlx::PgPool;
 
 pub fn configure(cfg: &mut web::ServiceConfig) {

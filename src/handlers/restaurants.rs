@@ -1,5 +1,5 @@
 use crate::models::restaurant::{CreateRestaurant, Restaurant, UpdateRestaurant};
-use actix_web::{HttpResponse, Result, web};
+use actix_web::{web, HttpResponse, Result};
 use sqlx::PgPool;
 
 pub fn configure(cfg: &mut web::ServiceConfig) {
