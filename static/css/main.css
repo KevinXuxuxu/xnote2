@@ -116,6 +116,26 @@ body {
     font-weight: 300 !important;
 }
 
+.btn-toggle {
+    background-color: #6c757d;
+    color: white;
+    padding: 0.5rem;
+    min-width: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-toggle:hover {
+    background-color: #545b62;
+}
+
+.btn-toggle::before {
+    content: "#";
+    font-size: 1rem;
+    font-weight: 300 !important;
+}
+
 .btn:disabled {
     opacity: 0.6;
     cursor: not-allowed;

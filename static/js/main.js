@@ -56,6 +56,11 @@ function setupControlButtons() {
     document.getElementById('refreshBtn').onclick = () => {
         window.eventSpreadsheet.refresh();
     };
+
+    // Toggle columns button
+    document.getElementById('toggleColumnsBtn').onclick = () => {
+        window.eventSpreadsheet.toggleMealsAndDrinksColumns();
+    };
 }
 
 function setupFilters() {

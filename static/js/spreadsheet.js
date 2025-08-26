@@ -16,6 +16,9 @@ class EventSpreadsheet {
             searchText: urlParams.get('searchText') || ''
         };
 
+        // Track column visibility state
+        this.mealsAndDrinksHidden = false;
+
         this.initializeSpreadsheet();
     }
 
@@ -125,6 +128,11 @@ class EventSpreadsheet {
             columnSorting: true,
             filters: true,
             dropdownMenu: true,
+            hiddenColumns: {
+                copyPasteEnabled: true,
+                indicators: true,
+                columns: []
+            },
             contextMenu: {
                 items: {
                     'details': {
@@ -793,6 +801,33 @@ class EventSpreadsheet {
     showError(message) {
         // Simple alert for now - could be enhanced with a toast system
         alert(`Error: ${message}`);
+    }
+
+    /**
+     * Toggle visibility of meal and drink columns
+     */
+    toggleMealsAndDrinksColumns() {
+        if (!this.hotInstance) return;
+
+        // Columns to hide: Breakfast 1, Breakfast 2, Lunch 1, Lunch 2, Dinner 1, Dinner 2, Drinks
+        // Column indices: 2, 3, 4, 5, 6, 7, 8
+        const mealAndDrinkColumns = [2, 3, 4, 5, 6, 7, 8];
+
+        // Access the hiddenColumns plugin instance
+        const hiddenColumnsPlugin = this.hotInstance.getPlugin('hiddenColumns');
+
+        if (this.mealsAndDrinksHidden) {
+            // Show the columns
+            hiddenColumnsPlugin.showColumns(mealAndDrinkColumns);
+            this.mealsAndDrinksHidden = false;
+        } else {
+            // Hide the columns
+            hiddenColumnsPlugin.hideColumns(mealAndDrinkColumns);
+            this.mealsAndDrinksHidden = true;
+        }
+
+        // Re-render to see the changes
+        this.hotInstance.render();
     }
 
     /**
