@@ -138,7 +138,7 @@ class PeopleSpreadsheet {
     }
 
     /**
-     * Capture person data before row removal
+     * Capture person data before row removal and show confirmation
      */
     beforeRowRemove(index, amount, physicalRows, source) {
         // Store the people that will be deleted
@@ -159,6 +159,22 @@ class PeopleSpreadsheet {
                 });
             }
         }
+
+        // Show confirmation dialog
+        if (this.peopleToDelete.length > 0) {
+            const names = this.peopleToDelete.map(person => `"${person.name}"`).join(', ');
+            const pluralText = this.peopleToDelete.length === 1 ? 'person' : 'people';
+            const confirmed = confirm(
+                `Are you sure you want to delete ${this.peopleToDelete.length} ${pluralText}: ${names}?\n\n` +
+                `This will also delete all related meals, events, and drinks associated with ${this.peopleToDelete.length === 1 ? 'this person' : 'these people'}.`
+            );
+
+            if (!confirmed) {
+                // Cancel the deletion by clearing the list
+                this.peopleToDelete = [];
+                return false; // This should prevent the deletion, but Handsontable might not respect it
+            }
+        }
     }
 
     /**
@@ -166,6 +182,8 @@ class PeopleSpreadsheet {
      */
     async afterRowRemove(index, amount, physicalRows, source) {
         if (!this.peopleToDelete || this.peopleToDelete.length === 0) {
+            // User cancelled or no people to delete, refresh to restore rows
+            await this.loadData();
             return;
         }
 

@@ -158,7 +158,7 @@ class ActivitySpreadsheet {
     }
 
     /**
-     * Capture activity data before row removal
+     * Capture activity data before row removal and show confirmation
      */
     beforeRowRemove(index, amount, physicalRows, source) {
         // Store the activities that will be deleted
@@ -179,6 +179,22 @@ class ActivitySpreadsheet {
                 });
             }
         }
+
+        // Show confirmation dialog
+        if (this.activitiesToDelete.length > 0) {
+            const names = this.activitiesToDelete.map(activity => `"${activity.name}"`).join(', ');
+            const pluralText = this.activitiesToDelete.length === 1 ? 'activity' : 'activities';
+            const confirmed = confirm(
+                `Are you sure you want to delete ${this.activitiesToDelete.length} ${pluralText}: ${names}?\n\n` +
+                `This will also delete all related events that use ${this.activitiesToDelete.length === 1 ? 'this activity' : 'these activities'}.`
+            );
+
+            if (!confirmed) {
+                // Cancel the deletion by clearing the list
+                this.activitiesToDelete = [];
+                return false;
+            }
+        }
     }
 
     /**
@@ -186,6 +202,8 @@ class ActivitySpreadsheet {
      */
     async afterRowRemove(index, amount, physicalRows, source) {
         if (!this.activitiesToDelete || this.activitiesToDelete.length === 0) {
+            // User cancelled or no activities to delete, refresh to restore rows
+            await this.loadData();
             return;
         }
 

@@ -176,6 +176,22 @@ class RestaurantSpreadsheet {
                 });
             }
         }
+
+        // Show confirmation dialog
+        if (this.restaurantsToDelete.length > 0) {
+            const names = this.restaurantsToDelete.map(restaurant => `"${restaurant.name}"`).join(', ');
+            const pluralText = this.restaurantsToDelete.length === 1 ? 'restaurant' : 'restaurants';
+            const confirmed = confirm(
+                `Are you sure you want to delete ${this.restaurantsToDelete.length} ${pluralText}: ${names}?\n\n` +
+                `This will also delete all related meals that use ${this.restaurantsToDelete.length === 1 ? 'this restaurant' : 'these restaurants'}.`
+            );
+
+            if (!confirmed) {
+                // Cancel the deletion by clearing the list
+                this.restaurantsToDelete = [];
+                return false;
+            }
+        }
     }
 
     /**
@@ -183,6 +199,8 @@ class RestaurantSpreadsheet {
      */
     async afterRowRemove(index, amount, physicalRows, source) {
         if (!this.restaurantsToDelete || this.restaurantsToDelete.length === 0) {
+            // User cancelled or no restaurants to delete, refresh to restore rows
+            await this.loadData();
             return;
         }
 

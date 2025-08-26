@@ -151,7 +151,7 @@ class RecipeSpreadsheet {
     }
 
     /**
-     * Capture recipe data before row removal
+     * Capture recipe data before row removal and show confirmation
      */
     beforeRowRemove(index, amount, physicalRows, source) {
         // Store the recipes that will be deleted
@@ -172,6 +172,22 @@ class RecipeSpreadsheet {
                 });
             }
         }
+
+        // Show confirmation dialog
+        if (this.recipesToDelete.length > 0) {
+            const names = this.recipesToDelete.map(recipe => `"${recipe.name}"`).join(', ');
+            const pluralText = this.recipesToDelete.length === 1 ? 'recipe' : 'recipes';
+            const confirmed = confirm(
+                `Are you sure you want to delete ${this.recipesToDelete.length} ${pluralText}: ${names}?\n\n` +
+                `This will also delete all related meals that use ${this.recipesToDelete.length === 1 ? 'this recipe' : 'these recipes'}.`
+            );
+
+            if (!confirmed) {
+                // Cancel the deletion by clearing the list
+                this.recipesToDelete = [];
+                return false;
+            }
+        }
     }
 
     /**
@@ -179,6 +195,8 @@ class RecipeSpreadsheet {
      */
     async afterRowRemove(index, amount, physicalRows, source) {
         if (!this.recipesToDelete || this.recipesToDelete.length === 0) {
+            // User cancelled or no recipes to delete, refresh to restore rows
+            await this.loadData();
             return;
         }
 

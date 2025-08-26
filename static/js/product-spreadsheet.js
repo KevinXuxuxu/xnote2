@@ -133,7 +133,7 @@ class ProductSpreadsheet {
     }
 
     /**
-     * Capture product data before row removal
+     * Capture product data before row removal and show confirmation
      */
     beforeRowRemove(index, amount, physicalRows, source) {
         // Store the products that will be deleted
@@ -154,6 +154,22 @@ class ProductSpreadsheet {
                 });
             }
         }
+
+        // Show confirmation dialog
+        if (this.productsToDelete.length > 0) {
+            const names = this.productsToDelete.map(product => `"${product.name}"`).join(', ');
+            const pluralText = this.productsToDelete.length === 1 ? 'product' : 'products';
+            const confirmed = confirm(
+                `Are you sure you want to delete ${this.productsToDelete.length} ${pluralText}: ${names}?\n\n` +
+                `This will also delete all related meals that use ${this.productsToDelete.length === 1 ? 'this product' : 'these products'}.`
+            );
+
+            if (!confirmed) {
+                // Cancel the deletion by clearing the list
+                this.productsToDelete = [];
+                return false;
+            }
+        }
     }
 
     /**
@@ -161,6 +177,8 @@ class ProductSpreadsheet {
      */
     async afterRowRemove(index, amount, physicalRows, source) {
         if (!this.productsToDelete || this.productsToDelete.length === 0) {
+            // User cancelled or no products to delete, refresh to restore rows
+            await this.loadData();
             return;
         }
 

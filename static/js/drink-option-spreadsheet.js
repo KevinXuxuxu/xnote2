@@ -126,7 +126,7 @@ class DrinkOptionSpreadsheet {
     }
 
     /**
-     * Capture drink option data before row removal
+     * Capture drink option data before row removal and show confirmation
      */
     beforeRowRemove(index, amount, physicalRows, source) {
         // Store the drink options that will be deleted
@@ -145,6 +145,22 @@ class DrinkOptionSpreadsheet {
                 });
             }
         }
+
+        // Show confirmation dialog
+        if (this.drinkOptionsToDelete.length > 0) {
+            const names = this.drinkOptionsToDelete.map(drinkOption => `"${drinkOption.name}"`).join(', ');
+            const pluralText = this.drinkOptionsToDelete.length === 1 ? 'drink option' : 'drink options';
+            const confirmed = confirm(
+                `Are you sure you want to delete ${this.drinkOptionsToDelete.length} ${pluralText}: ${names}?\n\n` +
+                `This will also delete all related drinks that use ${this.drinkOptionsToDelete.length === 1 ? 'this drink option' : 'these drink options'}.`
+            );
+
+            if (!confirmed) {
+                // Cancel the deletion by clearing the list
+                this.drinkOptionsToDelete = [];
+                return false;
+            }
+        }
     }
 
     /**
@@ -152,6 +168,8 @@ class DrinkOptionSpreadsheet {
      */
     async afterRowRemove(index, amount, physicalRows, source) {
         if (!this.drinkOptionsToDelete || this.drinkOptionsToDelete.length === 0) {
+            // User cancelled or no drink options to delete, refresh to restore rows
+            await this.loadData();
             return;
         }
 
