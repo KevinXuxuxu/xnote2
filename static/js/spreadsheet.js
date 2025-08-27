@@ -548,7 +548,10 @@ class EventSpreadsheet {
 
         // Reapply column hiding if columns were previously hidden
         if (this.mealsAndDrinksHidden) {
-            this.reapplyColumnHiding();
+            // Add small delay to ensure Handsontable is fully rendered
+            setTimeout(() => {
+                this.reapplyColumnHiding();
+            }, 0);
         }
     }
 
