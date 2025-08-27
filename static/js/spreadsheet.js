@@ -545,6 +545,11 @@ class EventSpreadsheet {
         }
 
         this.hotInstance.loadData(this.filteredData);
+
+        // Reapply column hiding if columns were previously hidden
+        if (this.mealsAndDrinksHidden) {
+            this.reapplyColumnHiding();
+        }
     }
 
     /**
@@ -825,6 +830,26 @@ class EventSpreadsheet {
             hiddenColumnsPlugin.hideColumns(mealAndDrinkColumns);
             this.mealsAndDrinksHidden = true;
         }
+
+        // Re-render to see the changes
+        this.hotInstance.render();
+    }
+
+    /**
+     * Reapply column hiding after data reload (used internally)
+     */
+    reapplyColumnHiding() {
+        if (!this.hotInstance) return;
+
+        // Columns to hide: Breakfast 1, Breakfast 2, Lunch 1, Lunch 2, Dinner 1, Dinner 2, Drinks
+        // Column indices: 2, 3, 4, 5, 6, 7, 8
+        const mealAndDrinkColumns = [2, 3, 4, 5, 6, 7, 8];
+
+        // Access the hiddenColumns plugin instance
+        const hiddenColumnsPlugin = this.hotInstance.getPlugin('hiddenColumns');
+        
+        // Hide the columns (we know they should be hidden because mealsAndDrinksHidden is true)
+        hiddenColumnsPlugin.hideColumns(mealAndDrinkColumns);
 
         // Re-render to see the changes
         this.hotInstance.render();
