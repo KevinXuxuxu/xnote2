@@ -234,6 +234,7 @@ class DetailForms {
             radio.onchange = (e) => {
                 if (e.target.checked) {
                     this.renderFoodSourceDetails(e.target.value);
+                    this.updateMealTypeBasedOnFoodSource(e.target.value);
                 }
             };
         });
@@ -253,6 +254,26 @@ class DetailForms {
             return data.food_source.details.meal_type;
         }
         return 'cooked';
+    }
+
+    /**
+     * Update meal type selection based on food source type
+     */
+    updateMealTypeBasedOnFoodSource(foodSourceType) {
+        // Define the default meal types for each food source
+        const defaultMealTypes = {
+            'recipe': 'cooked',
+            'product': 'manufactured', 
+            'restaurant': 'dine-in'
+        };
+
+        const defaultMealType = defaultMealTypes[foodSourceType] || 'cooked';
+
+        // Find and select the appropriate meal type radio button
+        const mealTypeRadio = this.modalBody.querySelector(`input[name="mealType"][value="${defaultMealType}"]`);
+        if (mealTypeRadio) {
+            mealTypeRadio.checked = true;
+        }
     }
 
     renderFoodSourceDetails(type) {
