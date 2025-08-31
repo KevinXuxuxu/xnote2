@@ -64,7 +64,10 @@
                 </div>
                 <div class="filter-group">
                     <label for="searchText">Search:</label>
-                    <input type="text" id="searchText" class="form-control" placeholder="Search in meals, events, drinks...">
+                    <div class="search-input-wrapper">
+                        <input type="text" id="searchText" class="form-control" placeholder="full text match">
+                        <button id="clearSearchBtn" class="btn-clear-search" title="Clear search">×</button>
+                    </div>
                 </div>
                 <button id="applyFilters" class="btn btn-secondary">Apply Filters</button>
             </div>

@@ -61,6 +61,30 @@ function setupControlButtons() {
     document.getElementById('toggleColumnsBtn').onclick = () => {
         window.eventSpreadsheet.toggleMealsAndDrinksColumns();
     };
+
+    // Clear search button
+    document.getElementById('clearSearchBtn').onclick = () => {
+        const searchInput = document.getElementById('searchText');
+        const clearButton = document.getElementById('clearSearchBtn');
+        
+        searchInput.value = '';
+        
+        // Hide the clear button immediately
+        clearButton.classList.remove('visible');
+        
+        // Trigger the search to clear results immediately
+        const filters = {
+            searchText: ''
+        };
+        window.eventSpreadsheet.setFilters(filters);
+        
+        // Update URL to remove search parameter
+        updateUrlFilters(
+            document.getElementById('startDate').value,
+            document.getElementById('endDate').value,
+            ''
+        );
+    };
 }
 
 function setupFilters() {
@@ -83,15 +107,30 @@ function setupFilters() {
 
     // Add real-time search filtering with debounce
     const searchInput = document.getElementById('searchText');
+    const clearButton = document.getElementById('clearSearchBtn');
+    
+    // Function to toggle clear button visibility
+    const updateClearButtonVisibility = () => {
+        if (searchInput.value.trim().length > 0) {
+            clearButton.classList.add('visible');
+        } else {
+            clearButton.classList.remove('visible');
+        }
+    };
+
     const debouncedSearch = window.utils.debounce(() => {
         const searchText = searchInput.value;
         const filters = {
             searchText: searchText
         };
         window.eventSpreadsheet.setFilters(filters);
+        updateClearButtonVisibility();
     }, 300);
 
     searchInput.addEventListener('input', debouncedSearch);
+    
+    // Set initial visibility state
+    updateClearButtonVisibility();
 }
 
 

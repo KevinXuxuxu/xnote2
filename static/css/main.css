@@ -182,6 +182,44 @@ body {
     box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
 }
 
+/* Search input wrapper with clear button */
+.search-input-wrapper {
+    position: relative;
+    display: inline-block;
+}
+
+.search-input-wrapper input {
+    padding-right: 30px;
+}
+
+.btn-clear-search {
+    position: absolute;
+    right: 5px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    font-size: 18px;
+    cursor: pointer;
+    color: #999;
+    padding: 0;
+    width: 20px;
+    height: 20px;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+}
+
+.btn-clear-search.visible {
+    display: flex;
+}
+
+.btn-clear-search:hover {
+    background-color: #f0f0f0;
+    color: #666;
+}
+
 /* Spreadsheet container */
 #spreadsheet-container {
     background: white;
