@@ -54,7 +54,7 @@ function setupControlButtons() {
 
     // Refresh button
     document.getElementById('refreshBtn').onclick = () => {
-        window.eventSpreadsheet.refresh();
+        window.eventSpreadsheet.refreshWithDefaultDates();
     };
 
     // Toggle columns button
@@ -227,7 +227,7 @@ document.addEventListener('keydown', function (e) {
     // F5 or Ctrl/Cmd + R for refresh
     if (e.key === 'F5' || ((e.ctrlKey || e.metaKey) && e.key === 'r')) {
         e.preventDefault();
-        window.eventSpreadsheet.refresh();
+        window.eventSpreadsheet.refreshWithDefaultDates();
     }
 });
 

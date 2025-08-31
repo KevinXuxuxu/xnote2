@@ -794,6 +794,31 @@ class EventSpreadsheet {
     }
 
     /**
+     * Reset to default date range and refresh data
+     */
+    async refreshWithDefaultDates() {
+        // Reset filters to default date range but preserve search text
+        this.currentFilters = {
+            startDate: this.getDefaultStartDate(),
+            endDate: this.getDefaultEndDate(),
+            searchText: this.currentFilters.searchText || ''
+        };
+
+        // Update the date input fields in the UI
+        document.getElementById('startDate').value = this.currentFilters.startDate;
+        document.getElementById('endDate').value = this.currentFilters.endDate;
+
+        // Update URL with new date range
+        const updateUrlFilters = window.updateUrlFilters;
+        if (typeof updateUrlFilters === 'function') {
+            updateUrlFilters(this.currentFilters.startDate, this.currentFilters.endDate, this.currentFilters.searchText);
+        }
+
+        // Load data with new date range
+        await this.loadData();
+    }
+
+    /**
      * Show loading state
      */
     showLoading(show) {
