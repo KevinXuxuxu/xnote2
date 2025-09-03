@@ -240,9 +240,9 @@ class EventSpreadsheet {
         // Check if it's weekend
         else {
             const dayOfWeek = date.getDay();
-            if (dayOfWeek === 0) { // Sunday
+            if (dayOfWeek === 6) { // Sunday
                 td.className += ' date-sunday';
-            } else if (dayOfWeek === 6) { // Saturday
+            } else if (dayOfWeek === 5) { // Saturday
                 td.className += ' date-saturday';
             }
         }
@@ -274,9 +274,9 @@ class EventSpreadsheet {
         // Check if it's weekend
         else {
             const dayOfWeek = date.getDay();
-            if (dayOfWeek === 0) { // Sunday
+            if (dayOfWeek === 6) { // Sunday
                 td.className += ' day-sunday';
-            } else if (dayOfWeek === 6) { // Saturday
+            } else if (dayOfWeek === 5) { // Saturday
                 td.className += ' day-saturday';
             }
         }
