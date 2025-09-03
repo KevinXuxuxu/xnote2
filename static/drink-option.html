@@ -32,13 +32,31 @@
                 <button id="refreshBtn" class="btn btn-refresh" title="Refresh"></button>
 
                 <!-- Navigation Buttons -->
-                <a href="/static/index.html" class="btn btn-navigate">Daily View</a>
-                <a href="/static/recipe.html" class="btn btn-navigate">Recipe</a>
-                <a href="/static/product.html" class="btn btn-navigate">Product</a>
-                <a href="/static/activity.html" class="btn btn-navigate">Activity</a>
-                <button class="btn btn-navigate" disabled>Drink Option</button>
-                <a href="/static/restaurant.html" class="btn btn-navigate">Restaurant</a>
-                <a href="/static/people.html" class="btn btn-navigate">People</a>
+                <div class="nav-buttons-desktop">
+                    <a href="/static/index.html" class="btn btn-navigate">Daily View</a>
+                    <a href="/static/recipe.html" class="btn btn-navigate">Recipe</a>
+                    <a href="/static/product.html" class="btn btn-navigate">Product</a>
+                    <a href="/static/activity.html" class="btn btn-navigate">Activity</a>
+                    <button class="btn btn-navigate" disabled>Drink Option</button>
+                    <a href="/static/restaurant.html" class="btn btn-navigate">Restaurant</a>
+                    <a href="/static/people.html" class="btn btn-navigate">People</a>
+                </div>
+                
+                <!-- Navigation Dropdown for Mobile -->
+                <div class="nav-dropdown-mobile">
+                    <button class="btn btn-navigate nav-dropdown-toggle">
+                        Navigation ▼
+                    </button>
+                    <div class="nav-dropdown-menu">
+                        <a href="/static/index.html" class="nav-dropdown-item">Daily View</a>
+                        <a href="/static/recipe.html" class="nav-dropdown-item">Recipe</a>
+                        <a href="/static/product.html" class="nav-dropdown-item">Product</a>
+                        <a href="/static/activity.html" class="nav-dropdown-item">Activity</a>
+                        <span class="nav-dropdown-item current">Drink Option</span>
+                        <a href="/static/restaurant.html" class="nav-dropdown-item">Restaurant</a>
+                        <a href="/static/people.html" class="nav-dropdown-item">People</a>
+                    </div>
+                </div>
             </div>
         </header>
 
@@ -95,7 +113,37 @@
             document.getElementById('refreshBtn').onclick = () => {
                 window.drinkOptionSpreadsheet.refresh();
             };
+
+            // Navigation dropdown setup
+            setupNavigationDropdown();
         });
+
+        // Navigation dropdown functionality
+        function setupNavigationDropdown() {
+            const navDropdownToggle = document.querySelector('.nav-dropdown-toggle');
+            const navDropdownMenu = document.querySelector('.nav-dropdown-menu');
+            
+            if (navDropdownToggle && navDropdownMenu) {
+                navDropdownToggle.onclick = (e) => {
+                    e.stopPropagation();
+                    navDropdownMenu.classList.toggle('show');
+                };
+
+                // Close dropdown when clicking outside
+                document.addEventListener('click', (e) => {
+                    if (!navDropdownToggle.contains(e.target) && !navDropdownMenu.contains(e.target)) {
+                        navDropdownMenu.classList.remove('show');
+                    }
+                });
+
+                // Close dropdown when clicking on menu items
+                navDropdownMenu.addEventListener('click', (e) => {
+                    if (e.target.tagName === 'A') {
+                        navDropdownMenu.classList.remove('show');
+                    }
+                });
+            }
+        }
     </script>
 </body>
 

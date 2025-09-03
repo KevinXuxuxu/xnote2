@@ -41,13 +41,31 @@
                 <button id="toggleColumnsBtn" class="btn btn-toggle" title="Toggle meals/drinks columns"></button>
 
                 <!-- Navigation Buttons -->
-                <button class="btn btn-navigate" disabled>Daily View</button>
-                <a href="/static/recipe.html" class="btn btn-navigate">Recipe</a>
-                <a href="/static/product.html" class="btn btn-navigate">Product</a>
-                <a href="/static/activity.html" class="btn btn-navigate">Activity</a>
-                <a href="/static/drink-option.html" class="btn btn-navigate">Drink Option</a>
-                <a href="/static/restaurant.html" class="btn btn-navigate">Restaurant</a>
-                <a href="/static/people.html" class="btn btn-navigate">People</a>
+                <div class="nav-buttons-desktop">
+                    <button class="btn btn-navigate" disabled>Daily View</button>
+                    <a href="/static/recipe.html" class="btn btn-navigate">Recipe</a>
+                    <a href="/static/product.html" class="btn btn-navigate">Product</a>
+                    <a href="/static/activity.html" class="btn btn-navigate">Activity</a>
+                    <a href="/static/drink-option.html" class="btn btn-navigate">Drink Option</a>
+                    <a href="/static/restaurant.html" class="btn btn-navigate">Restaurant</a>
+                    <a href="/static/people.html" class="btn btn-navigate">People</a>
+                </div>
+                
+                <!-- Navigation Dropdown for Mobile -->
+                <div class="nav-dropdown-mobile">
+                    <button class="btn btn-navigate nav-dropdown-toggle">
+                        Navigation ▼
+                    </button>
+                    <div class="nav-dropdown-menu">
+                        <span class="nav-dropdown-item current">Daily View</span>
+                        <a href="/static/recipe.html" class="nav-dropdown-item">Recipe</a>
+                        <a href="/static/product.html" class="nav-dropdown-item">Product</a>
+                        <a href="/static/activity.html" class="nav-dropdown-item">Activity</a>
+                        <a href="/static/drink-option.html" class="nav-dropdown-item">Drink Option</a>
+                        <a href="/static/restaurant.html" class="nav-dropdown-item">Restaurant</a>
+                        <a href="/static/people.html" class="nav-dropdown-item">People</a>
+                    </div>
+                </div>
             </div>
         </header>
 

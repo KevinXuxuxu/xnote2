@@ -719,7 +719,87 @@ table.htCore thead tr th,
     color: white;
 }
 
+/* Navigation dropdown styles */
+.nav-dropdown-mobile {
+    position: relative;
+    display: none;
+}
+
+.nav-dropdown-toggle {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    cursor: pointer;
+    height: 38.5px;
+}
+
+.nav-dropdown-toggle:hover {
+    background-color: #0056b3;
+}
+
+.nav-dropdown-menu {
+    display: none;
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background: white;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    min-width: 150px;
+    z-index: 1000;
+}
+
+.nav-dropdown-menu.show {
+    display: block;
+}
+
+.nav-dropdown-item {
+    display: block;
+    padding: 0.5rem 1rem;
+    color: #333;
+    text-decoration: none;
+    border-bottom: 1px solid #f8f9fa;
+    transition: background-color 0.2s ease;
+}
+
+.nav-dropdown-item:last-child {
+    border-bottom: none;
+}
+
+.nav-dropdown-item:hover {
+    background-color: #f8f9fa;
+}
+
+.nav-dropdown-item.current {
+    background-color: #e3f2fd;
+    color: #007bff;
+    font-weight: 500;
+    cursor: default;
+}
+
 /* Responsive design */
+@media (max-width: 1319px) {
+    .nav-buttons-desktop {
+        display: none;
+    }
+    
+    .nav-dropdown-mobile {
+        display: block;
+    }
+}
+
+@media (min-width: 1320px) {
+    .nav-buttons-desktop {
+        display: flex;
+        gap: 0.5rem;
+    }
+    
+    .nav-dropdown-mobile {
+        display: none;
+    }
+}
+
 @media (max-width: 768px) {
     .header {
         flex-direction: column;

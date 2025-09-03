@@ -85,6 +85,31 @@ function setupControlButtons() {
             ''
         );
     };
+
+    // Navigation dropdown toggle
+    const navDropdownToggle = document.querySelector('.nav-dropdown-toggle');
+    const navDropdownMenu = document.querySelector('.nav-dropdown-menu');
+    
+    if (navDropdownToggle && navDropdownMenu) {
+        navDropdownToggle.onclick = (e) => {
+            e.stopPropagation();
+            navDropdownMenu.classList.toggle('show');
+        };
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!navDropdownToggle.contains(e.target) && !navDropdownMenu.contains(e.target)) {
+                navDropdownMenu.classList.remove('show');
+            }
+        });
+
+        // Close dropdown when clicking on menu items
+        navDropdownMenu.addEventListener('click', (e) => {
+            if (e.target.tagName === 'A') {
+                navDropdownMenu.classList.remove('show');
+            }
+        });
+    }
 }
 
 function setupFilters() {
