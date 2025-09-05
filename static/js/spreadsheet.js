@@ -794,6 +794,85 @@ class EventSpreadsheet {
     }
 
     /**
+     * Refresh spreadsheet data and select newly added meal cell
+     */
+    async refreshAndSelectNewMeal(newEventInfo) {
+        await this.loadData();
+        
+        // Find and select the newly added meal cell
+        if (newEventInfo && newEventInfo.type === 'meal') {
+            this.selectNewMealCell(newEventInfo.date, newEventInfo.time);
+        }
+    }
+
+    /**
+     * Select the cell for newly added meal
+     */
+    selectNewMealCell(date, mealTime) {
+        if (!this.hotInstance || !this.filteredData) return;
+
+        // Find the row with the matching date
+        const targetRow = this.filteredData.findIndex(row => row.date === date);
+        if (targetRow === -1) return;
+
+        // Determine the column based on meal time
+        // Columns: breakfast.0 (2), breakfast.1 (3), lunch.0 (4), lunch.1 (5), dinner.0 (6), dinner.1 (7)
+        const mealTimeToColumns = {
+            'breakfast': [2, 3], // breakfast.0, breakfast.1
+            'lunch': [4, 5],     // lunch.0, lunch.1
+            'dinner': [6, 7]     // dinner.0, dinner.1
+        };
+
+        const possibleColumns = mealTimeToColumns[mealTime];
+        if (!possibleColumns) return;
+
+        const rowData = this.filteredData[targetRow];
+        if (!rowData || !rowData[mealTime]) return;
+
+        // Find the first available column for this meal time that has content
+        // We want to select the last added meal, so we look for the rightmost non-empty cell
+        let targetColumn = null;
+        for (let i = possibleColumns.length - 1; i >= 0; i--) {
+            const col = possibleColumns[i];
+            const mealIndex = col - possibleColumns[0];
+            
+            if (rowData[mealTime][mealIndex] && 
+                rowData[mealTime][mealIndex].name && 
+                rowData[mealTime][mealIndex].name.trim() !== '') {
+                targetColumn = col;
+                break;
+            }
+        }
+
+        // If no meal found in the expected position, select the first column for this meal time
+        if (targetColumn === null) {
+            targetColumn = possibleColumns[0];
+        }
+
+        // Use setTimeout to ensure the table is fully rendered before selecting
+        setTimeout(() => {
+            if (this.hotInstance && targetRow >= 0 && targetColumn >= 0) {
+                try {
+                    this.hotInstance.selectCell(targetRow, targetColumn);
+                    
+                    // Only scroll if the cell is not currently visible
+                    const viewport = this.hotInstance.view.wt.wtTable.getViewport();
+                    const isRowVisible = targetRow >= viewport.TB && targetRow <= viewport.BB;
+                    const isColVisible = targetColumn >= viewport.TL && targetColumn <= viewport.TR;
+                    
+                    if (!isRowVisible || !isColVisible) {
+                        this.hotInstance.scrollViewportTo(targetRow, targetColumn);
+                    }
+                    
+                    console.log(`Selected cell: row ${targetRow}, column ${targetColumn} for ${mealTime} meal on ${date}`);
+                } catch (error) {
+                    console.warn('Failed to select cell:', error);
+                }
+            }
+        }, 100);
+    }
+
+    /**
      * Reset to default date range and refresh data
      */
     async refreshWithDefaultDates() {

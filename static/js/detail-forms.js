@@ -416,18 +416,34 @@ class DetailForms {
     async saveChanges(addAnother = false) {
         try {
             const formData = this.collectFormData();
+            let newEventInfo = null;
 
             if (this.currentEventId) {
                 // Update existing event
                 await this.updateEvent(formData);
             } else {
-                // Create new event
-                await this.createEvent(formData);
+                // Create new event and track info for cell selection
+                const result = await this.createEvent(formData);
+                
+                // Track new meal info for cell selection (only for meals in daily view)
+                if (this.currentEventType === 'meal' && window.eventSpreadsheet) {
+                    newEventInfo = {
+                        type: 'meal',
+                        date: formData[0] ? formData[0].date : formData.date, // Handle both array and single meal
+                        time: formData[0] ? formData[0].time : formData.time,
+                        result: result
+                    };
+                }
             }
 
             // Refresh the spreadsheet
             if (window.eventSpreadsheet) {
-                window.eventSpreadsheet.refresh();
+                if (newEventInfo) {
+                    // Refresh and then select the newly added meal cell
+                    await window.eventSpreadsheet.refreshAndSelectNewMeal(newEventInfo);
+                } else {
+                    await window.eventSpreadsheet.refresh();
+                }
             }
 
             if (addAnother) {
