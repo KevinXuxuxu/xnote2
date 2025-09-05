@@ -794,15 +794,29 @@ class EventSpreadsheet {
     }
 
     /**
-     * Refresh spreadsheet data and select newly added meal cell
+     * Refresh spreadsheet data and select newly added cell (meal, event, or drink)
      */
-    async refreshAndSelectNewMeal(newEventInfo) {
+    async refreshAndSelectNewCell(newEventInfo) {
         await this.loadData();
         
-        // Find and select the newly added meal cell
-        if (newEventInfo && newEventInfo.type === 'meal') {
-            this.selectNewMealCell(newEventInfo.date, newEventInfo.time);
+        // Find and select the newly added cell based on type
+        if (newEventInfo) {
+            if (newEventInfo.type === 'meal') {
+                this.selectNewMealCell(newEventInfo.date, newEventInfo.time);
+            } else if (newEventInfo.type === 'event') {
+                this.selectNewEventCell(newEventInfo.date);
+            } else if (newEventInfo.type === 'drink') {
+                this.selectNewDrinkCell(newEventInfo.date);
+            }
         }
+    }
+
+    /**
+     * Refresh spreadsheet data and select newly added meal cell
+     * @deprecated Use refreshAndSelectNewCell instead
+     */
+    async refreshAndSelectNewMeal(newEventInfo) {
+        return this.refreshAndSelectNewCell(newEventInfo);
     }
 
     /**
@@ -867,6 +881,100 @@ class EventSpreadsheet {
                     console.log(`Selected cell: row ${targetRow}, column ${targetColumn} for ${mealTime} meal on ${date}`);
                 } catch (error) {
                     console.warn('Failed to select cell:', error);
+                }
+            }
+        }, 100);
+    }
+
+    /**
+     * Select the cell for newly added event
+     */
+    selectNewEventCell(date) {
+        if (!this.hotInstance || !this.filteredData) return;
+
+        // Find the row with the matching date
+        const targetRow = this.filteredData.findIndex(row => row.date === date);
+        if (targetRow === -1) return;
+
+        // Event columns start at column 9 and go to column 18 (Event 1 to Event 10)
+        const eventColumns = [9, 10, 11, 12, 13, 14, 15, 16, 17, 18];
+
+        const rowData = this.filteredData[targetRow];
+        if (!rowData || !rowData.events) return;
+
+        // Find the rightmost event column that has content
+        let targetColumn = null;
+        for (let i = eventColumns.length - 1; i >= 0; i--) {
+            const col = eventColumns[i];
+            const eventIndex = col - 9; // Convert to event array index
+            
+            if (rowData.events[eventIndex] && 
+                rowData.events[eventIndex].text && 
+                rowData.events[eventIndex].text.trim() !== '') {
+                targetColumn = col;
+                break;
+            }
+        }
+
+        // If no event found, select the first event column
+        if (targetColumn === null) {
+            targetColumn = eventColumns[0];
+        }
+
+        // Use setTimeout to ensure the table is fully rendered before selecting
+        setTimeout(() => {
+            if (this.hotInstance && targetRow >= 0 && targetColumn >= 0) {
+                try {
+                    this.hotInstance.selectCell(targetRow, targetColumn);
+                    
+                    // Only scroll if the cell is not currently visible
+                    const viewport = this.hotInstance.view.wt.wtTable.getViewport();
+                    const isRowVisible = targetRow >= viewport.TB && targetRow <= viewport.BB;
+                    const isColVisible = targetColumn >= viewport.TL && targetColumn <= viewport.TR;
+                    
+                    if (!isRowVisible || !isColVisible) {
+                        this.hotInstance.scrollViewportTo(targetRow, targetColumn);
+                    }
+                    
+                    console.log(`Selected cell: row ${targetRow}, column ${targetColumn} for event on ${date}`);
+                } catch (error) {
+                    console.warn('Failed to select event cell:', error);
+                }
+            }
+        }, 100);
+    }
+
+    /**
+     * Select the cell for newly added drink
+     */
+    selectNewDrinkCell(date) {
+        if (!this.hotInstance || !this.filteredData) return;
+
+        // Find the row with the matching date
+        const targetRow = this.filteredData.findIndex(row => row.date === date);
+        if (targetRow === -1) return;
+
+        // Drinks column is at index 8
+        const targetColumn = 8;
+
+        // Use setTimeout to ensure the table is fully rendered before selecting
+        setTimeout(() => {
+            if (this.hotInstance && targetRow >= 0 && targetColumn >= 0) {
+                try {
+                    this.hotInstance.selectCell(targetRow, targetColumn);
+                    
+                    // Only scroll if the cell is not currently visible
+                    const viewport = this.hotInstance.view.wt.wtTable.getViewport();
+                    const isRowVisible = targetRow >= viewport.TB && targetRow <= viewport.BB;
+                    const isColVisible = targetColumn >= viewport.TL && targetColumn <= viewport.TR;
+                    
+                    if (!isRowVisible || !isColVisible) {
+                        this.hotInstance.scrollViewportTo(targetRow, targetColumn);
+                    }
+                    
+                    console.log(`Selected cell: row ${targetRow}, column ${targetColumn} for drink on ${date}`);
+                } catch (error) {
+                    console.warn('Failed to select drink cell:', error);
                 }
             }
         }, 100);

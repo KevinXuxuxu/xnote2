@@ -425,22 +425,36 @@ class DetailForms {
                 // Create new event and track info for cell selection
                 const result = await this.createEvent(formData);
                 
-                // Track new meal info for cell selection (only for meals in daily view)
-                if (this.currentEventType === 'meal' && window.eventSpreadsheet) {
-                    newEventInfo = {
-                        type: 'meal',
-                        date: formData[0] ? formData[0].date : formData.date, // Handle both array and single meal
-                        time: formData[0] ? formData[0].time : formData.time,
-                        result: result
-                    };
+                // Track new event info for cell selection (meals, events, drinks in daily view)
+                if (window.eventSpreadsheet) {
+                    if (this.currentEventType === 'meal') {
+                        newEventInfo = {
+                            type: 'meal',
+                            date: formData[0] ? formData[0].date : formData.date, // Handle both array and single meal
+                            time: formData[0] ? formData[0].time : formData.time,
+                            result: result
+                        };
+                    } else if (this.currentEventType === 'event') {
+                        newEventInfo = {
+                            type: 'event',
+                            date: formData.date,
+                            result: result
+                        };
+                    } else if (this.currentEventType === 'drink') {
+                        newEventInfo = {
+                            type: 'drink',
+                            date: formData[0] ? formData[0].date : formData.date, // Handle both array and single drink
+                            result: result
+                        };
+                    }
                 }
             }
 
             // Refresh the spreadsheet
             if (window.eventSpreadsheet) {
                 if (newEventInfo) {
-                    // Refresh and then select the newly added meal cell
-                    await window.eventSpreadsheet.refreshAndSelectNewMeal(newEventInfo);
+                    // Refresh and then select the newly added cell
+                    await window.eventSpreadsheet.refreshAndSelectNewCell(newEventInfo);
                 } else {
                     await window.eventSpreadsheet.refresh();
                 }
