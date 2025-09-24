@@ -64,6 +64,13 @@
         </header>
 
         <main class="main-content">
+            <!-- Search Controls -->
+            <div class="search-controls">
+                <div class="search-input-wrapper">
+                    <input type="text" id="searchText" class="form-control" placeholder="Search people...">
+                    <button id="clearSearchBtn" class="btn-clear-search" title="Clear search">×</button>
+                </div>
+            </div>
             <!-- Main Spreadsheet -->
             <div id="spreadsheet-container">
                 <div id="people-spreadsheet"></div>
@@ -120,6 +127,37 @@
             document.getElementById('refreshBtn').onclick = () => {
                 window.peopleSpreadsheet.refresh();
             };
+
+            // Setup search functionality
+            const searchInput = document.getElementById('searchText');
+            const clearButton = document.getElementById('clearSearchBtn');
+
+            // Function to toggle clear button visibility
+            const updateClearButtonVisibility = () => {
+                if (searchInput.value.trim().length > 0) {
+                    clearButton.classList.add('visible');
+                } else {
+                    clearButton.classList.remove('visible');
+                }
+            };
+
+            const debouncedSearch = window.utils.debounce(() => {
+                const searchText = searchInput.value;
+                window.peopleSpreadsheet.setSearchFilter(searchText);
+                updateClearButtonVisibility();
+            }, 300);
+
+            searchInput.addEventListener('input', debouncedSearch);
+
+            // Clear search button
+            clearButton.onclick = () => {
+                searchInput.value = '';
+                clearButton.classList.remove('visible');
+                window.peopleSpreadsheet.setSearchFilter('');
+            };
+
+            // Set initial visibility state
+            updateClearButtonVisibility();
 
             // Navigation dropdown setup
             setupNavigationDropdown();

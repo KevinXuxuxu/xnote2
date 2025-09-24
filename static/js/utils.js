@@ -30,6 +30,100 @@ window.dateUtils = {
     }
 };
 
+// General utility functions
+window.utils = {
+    /**
+     * Format a date string for display
+     */
+    formatDate: function (dateString) {
+        return new Date(dateString).toLocaleDateString();
+    },
+
+    /**
+     * Format people names for display
+     */
+    formatPeople: function (people) {
+        if (!people) return '';
+
+        // Handle string format (comma-separated names) or array of objects
+        let nameArray;
+        if (typeof people === 'string') {
+            nameArray = people.split(',').map(name => name.trim()).filter(name => name);
+        } else if (Array.isArray(people)) {
+            if (people.length === 0) return '';
+            nameArray = people.map(p => p.name);
+        } else {
+            return '';
+        }
+
+        // Check if it's exactly just xx and ww - if so, omit them
+        const lowerNames = nameArray.map(name => name.toLowerCase());
+        if (lowerNames.length === 2 && lowerNames.includes('xx') && lowerNames.includes('ww')) {
+            return '';
+        }
+
+        // Sort people: xx and ww first, then others alphabetically
+        const sortedNames = nameArray.slice().sort((a, b) => {
+            const aName = a.toLowerCase();
+            const bName = b.toLowerCase();
+
+            // xx comes first
+            if (aName === 'xx') return -1;
+            if (bName === 'xx') return 1;
+
+            // ww comes second
+            if (aName === 'ww') return -1;
+            if (bName === 'ww') return 1;
+
+            // Others alphabetically
+            return aName.localeCompare(bName);
+        });
+
+        return sortedNames.join(', ');
+    },
+
+    /**
+     * Debounce function to limit how often a function can be called
+     */
+    debounce: function (func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    },
+
+    /**
+     * Show toast notification
+     */
+    showToast: function (message, type = 'info') {
+        const toast = document.createElement('div');
+        toast.className = `alert alert-${type}`;
+        toast.style.position = 'fixed';
+        toast.style.top = '20px';
+        toast.style.right = '20px';
+        toast.style.zIndex = '10000';
+        toast.style.maxWidth = '400px';
+        toast.innerHTML = `
+            ${message}
+            <button onclick="this.parentElement.remove()" style="float: right; background: none; border: none; font-size: 1.2em; cursor: pointer;">&times;</button>
+        `;
+
+        document.body.appendChild(toast);
+
+        // Auto-remove after 3 seconds
+        setTimeout(() => {
+            if (toast.parentElement) {
+                toast.remove();
+            }
+        }, 3000);
+    }
+};
+
 /**
  * Duplicate detection utilities
  */

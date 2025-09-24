@@ -6,6 +6,8 @@ class RecipeSpreadsheet {
         this.containerId = containerId;
         this.hotInstance = null;
         this.data = [];
+        this.filteredData = [];
+        this.currentSearchText = '';
 
         this.initializeSpreadsheet();
     }
@@ -16,7 +18,7 @@ class RecipeSpreadsheet {
         const config = {
             data: [],
             licenseKey: 'non-commercial-and-evaluation',
-            height: window.innerHeight - 150,
+            height: window.innerHeight - 165,
             width: '100%',
             colHeaders: ['ID', 'Name', 'Ingredients', 'Procedure', 'Cautions'],
             columns: [
@@ -104,7 +106,7 @@ class RecipeSpreadsheet {
 
             const recipes = await apiClient.getRecipes();
             this.data = recipes;
-            this.hotInstance.loadData(this.data);
+            this.applySearchFilter();
 
             this.showLoading(false);
         } catch (error) {
@@ -112,6 +114,47 @@ class RecipeSpreadsheet {
             this.showError('Failed to load recipes from server');
             this.showLoading(false);
         }
+    }
+
+    /**
+     * Set search filter and apply it
+     */
+    setSearchFilter(searchText) {
+        this.currentSearchText = searchText;
+        this.applySearchFilter();
+    }
+
+    /**
+     * Apply current search filter to data
+     */
+    applySearchFilter() {
+        this.filteredData = [...this.data];
+        
+        if (this.currentSearchText && this.currentSearchText.trim()) {
+            const searchTerm = this.currentSearchText.toLowerCase().trim();
+            this.filteredData = this.filteredData.filter(recipe => this.recipeMatchesSearch(recipe, searchTerm));
+        }
+        
+        this.hotInstance.loadData(this.filteredData);
+    }
+
+    /**
+     * Check if a recipe matches the search term
+     */
+    recipeMatchesSearch(recipe, searchTerm) {
+        // Search in name
+        if (recipe.name && recipe.name.toLowerCase().includes(searchTerm)) return true;
+        
+        // Search in ingredients
+        if (recipe.ingredients && recipe.ingredients.toLowerCase().includes(searchTerm)) return true;
+        
+        // Search in procedure
+        if (recipe.procedure && recipe.procedure.toLowerCase().includes(searchTerm)) return true;
+        
+        // Search in cautions
+        if (recipe.cautions && recipe.cautions.toLowerCase().includes(searchTerm)) return true;
+        
+        return false;
     }
 
     /**

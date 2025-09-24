@@ -6,6 +6,8 @@ class RestaurantSpreadsheet {
         this.containerId = containerId;
         this.hotInstance = null;
         this.data = [];
+        this.filteredData = [];
+        this.currentSearchText = '';
 
         this.initializeSpreadsheet();
     }
@@ -16,7 +18,7 @@ class RestaurantSpreadsheet {
         const config = {
             data: [],
             licenseKey: 'non-commercial-and-evaluation',
-            height: window.innerHeight - 150,
+            height: window.innerHeight - 165,
             width: '100%',
             colHeaders: ['ID', 'Name', 'Location', 'Food Type', 'Price'],
             columns: [
@@ -106,7 +108,7 @@ class RestaurantSpreadsheet {
 
             const restaurants = await apiClient.getRestaurants();
             this.data = restaurants;
-            this.hotInstance.loadData(this.data);
+            this.applySearchFilter();
 
             this.showLoading(false);
         } catch (error) {
@@ -114,6 +116,47 @@ class RestaurantSpreadsheet {
             this.showError('Failed to load restaurants from server');
             this.showLoading(false);
         }
+    }
+
+    /**
+     * Set search filter and apply it
+     */
+    setSearchFilter(searchText) {
+        this.currentSearchText = searchText;
+        this.applySearchFilter();
+    }
+
+    /**
+     * Apply current search filter to data
+     */
+    applySearchFilter() {
+        this.filteredData = [...this.data];
+        
+        if (this.currentSearchText && this.currentSearchText.trim()) {
+            const searchTerm = this.currentSearchText.toLowerCase().trim();
+            this.filteredData = this.filteredData.filter(restaurant => this.restaurantMatchesSearch(restaurant, searchTerm));
+        }
+        
+        this.hotInstance.loadData(this.filteredData);
+    }
+
+    /**
+     * Check if a restaurant matches the search term
+     */
+    restaurantMatchesSearch(restaurant, searchTerm) {
+        // Search in name
+        if (restaurant.name && restaurant.name.toLowerCase().includes(searchTerm)) return true;
+        
+        // Search in location
+        if (restaurant.location && restaurant.location.toLowerCase().includes(searchTerm)) return true;
+        
+        // Search in cuisine_type
+        if (restaurant.cuisine_type && restaurant.cuisine_type.toLowerCase().includes(searchTerm)) return true;
+        
+        // Search in description
+        if (restaurant.description && restaurant.description.toLowerCase().includes(searchTerm)) return true;
+        
+        return false;
     }
 
     /**

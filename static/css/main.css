@@ -783,7 +783,7 @@ table.htCore thead tr th,
     .nav-buttons-desktop {
         display: none;
     }
-    
+
     .nav-dropdown-mobile {
         display: block;
     }
@@ -794,7 +794,7 @@ table.htCore thead tr th,
         display: flex;
         gap: 0.5rem;
     }
-    
+
     .nav-dropdown-mobile {
         display: none;
     }
@@ -867,4 +867,8 @@ table.htCore thead tr th,
     --ht-cell-horizontal-border-color: #ccc;
     --ht-cell-vertical-padding: 2px;
     --ht-cell-horizontal-padding: 4px;
+}
+
+.search-controls {
+    padding-bottom: 10px;
 }

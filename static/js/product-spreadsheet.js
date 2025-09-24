@@ -6,6 +6,8 @@ class ProductSpreadsheet {
         this.containerId = containerId;
         this.hotInstance = null;
         this.data = [];
+        this.filteredData = [];
+        this.currentSearchText = '';
 
         this.initializeSpreadsheet();
     }
@@ -16,7 +18,7 @@ class ProductSpreadsheet {
         const config = {
             data: [],
             licenseKey: 'non-commercial-and-evaluation',
-            height: window.innerHeight - 150,
+            height: window.innerHeight - 165,
             width: '100%',
             colHeaders: ['ID', 'Name'],
             columns: [
@@ -86,7 +88,7 @@ class ProductSpreadsheet {
 
             const products = await apiClient.getProducts();
             this.data = products;
-            this.hotInstance.loadData(this.data);
+            this.applySearchFilter();
 
             this.showLoading(false);
         } catch (error) {
@@ -94,6 +96,44 @@ class ProductSpreadsheet {
             this.showError('Failed to load products from server');
             this.showLoading(false);
         }
+    }
+
+    /**
+     * Set search filter and apply it
+     */
+    setSearchFilter(searchText) {
+        this.currentSearchText = searchText;
+        this.applySearchFilter();
+    }
+
+    /**
+     * Apply current search filter to data
+     */
+    applySearchFilter() {
+        this.filteredData = [...this.data];
+        
+        if (this.currentSearchText && this.currentSearchText.trim()) {
+            const searchTerm = this.currentSearchText.toLowerCase().trim();
+            this.filteredData = this.filteredData.filter(product => this.productMatchesSearch(product, searchTerm));
+        }
+        
+        this.hotInstance.loadData(this.filteredData);
+    }
+
+    /**
+     * Check if a product matches the search term
+     */
+    productMatchesSearch(product, searchTerm) {
+        // Search in name
+        if (product.name && product.name.toLowerCase().includes(searchTerm)) return true;
+        
+        // Search in brand
+        if (product.brand && product.brand.toLowerCase().includes(searchTerm)) return true;
+        
+        // Search in description
+        if (product.description && product.description.toLowerCase().includes(searchTerm)) return true;
+        
+        return false;
     }
 
     /**

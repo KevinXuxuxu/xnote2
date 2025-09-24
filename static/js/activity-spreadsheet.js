@@ -6,6 +6,8 @@ class ActivitySpreadsheet {
         this.containerId = containerId;
         this.hotInstance = null;
         this.data = [];
+        this.filteredData = [];
+        this.currentSearchText = '';
 
         this.initializeSpreadsheet();
     }
@@ -16,7 +18,7 @@ class ActivitySpreadsheet {
         const config = {
             data: [],
             licenseKey: 'non-commercial-and-evaluation',
-            height: window.innerHeight - 150,
+            height: window.innerHeight - 165,
             width: '100%',
             colHeaders: ['ID', 'Name', 'Activity Type'],
             columns: [
@@ -111,7 +113,7 @@ class ActivitySpreadsheet {
 
             const activities = await apiClient.getActivities();
             this.data = activities;
-            this.hotInstance.loadData(this.data);
+            this.applySearchFilter();
 
             this.showLoading(false);
         } catch (error) {
@@ -249,6 +251,41 @@ class ActivitySpreadsheet {
      */
     showError(message) {
         alert(`Error: ${message}`);
+    }
+
+    /**
+     * Set search filter text and apply it
+     */
+    setSearchFilter(searchText) {
+        this.currentSearchText = searchText.toLowerCase();
+        this.applySearchFilter();
+    }
+
+    /**
+     * Apply search filter to the data
+     */
+    applySearchFilter() {
+        if (!this.currentSearchText.trim()) {
+            // No search filter, show all data
+            this.filteredData = [...this.data];
+        } else {
+            // Filter data based on search text
+            this.filteredData = this.data.filter(activity => 
+                this.activityMatchesSearch(activity, this.currentSearchText)
+            );
+        }
+        this.hotInstance.loadData(this.filteredData);
+    }
+
+    /**
+     * Check if activity matches search criteria
+     */
+    activityMatchesSearch(activity, searchText) {
+        return (
+            (activity.name && activity.name.toLowerCase().includes(searchText)) ||
+            (activity.type && activity.type.toLowerCase().includes(searchText)) ||
+            (activity.description && activity.description.toLowerCase().includes(searchText))
+        );
     }
 }
 
