@@ -41,7 +41,7 @@
                     <a href="/static/restaurant.html" class="btn btn-navigate">Restaurant</a>
                     <a href="/static/people.html" class="btn btn-navigate">People</a>
                 </div>
-                
+
                 <!-- Navigation Dropdown for Mobile -->
                 <div class="nav-dropdown-mobile">
                     <button class="btn btn-navigate nav-dropdown-toggle">
@@ -122,7 +122,7 @@
         function setupNavigationDropdown() {
             const navDropdownToggle = document.querySelector('.nav-dropdown-toggle');
             const navDropdownMenu = document.querySelector('.nav-dropdown-menu');
-            
+
             if (navDropdownToggle && navDropdownMenu) {
                 navDropdownToggle.onclick = (e) => {
                     e.stopPropagation();

@@ -24,7 +24,8 @@
         <header class="header">
             <div style="display: flex;">
                 <img src="/static/images/duck.webp" style="height: 50px;" />
-                <h2>< 呱~</h2>
+                <h2>
+                    < 呱~</h2>
             </div>
             <div class="controls">
                 <!-- Object Creation Buttons -->
@@ -43,7 +44,7 @@
                     <a href="/static/restaurant.html" class="btn btn-navigate">Restaurant</a>
                     <button class="btn btn-navigate" disabled>People</button>
                 </div>
-                
+
                 <!-- Navigation Dropdown for Mobile -->
                 <div class="nav-dropdown-mobile">
                     <button class="btn btn-navigate nav-dropdown-toggle">
@@ -127,7 +128,7 @@
         function setupNavigationDropdown() {
             const navDropdownToggle = document.querySelector('.nav-dropdown-toggle');
             const navDropdownMenu = document.querySelector('.nav-dropdown-menu');
-            
+
             if (navDropdownToggle && navDropdownMenu) {
                 navDropdownToggle.onclick = (e) => {
                     e.stopPropagation();

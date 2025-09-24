@@ -57,7 +57,7 @@ class EventSpreadsheet {
                     type: 'date',
                     dateFormat: 'YYYY-MM-DD',
                     readOnly: true,
-                    width: 100,
+                    width: 105,
                     renderer: this.dateRenderer.bind(this)
                 },
                 {
@@ -798,7 +798,7 @@ class EventSpreadsheet {
      */
     async refreshAndSelectNewCell(newEventInfo) {
         await this.loadData();
-        
+
         // Find and select the newly added cell based on type
         if (newEventInfo) {
             if (newEventInfo.type === 'meal') {
@@ -849,9 +849,9 @@ class EventSpreadsheet {
         for (let i = possibleColumns.length - 1; i >= 0; i--) {
             const col = possibleColumns[i];
             const mealIndex = col - possibleColumns[0];
-            
-            if (rowData[mealTime][mealIndex] && 
-                rowData[mealTime][mealIndex].name && 
+
+            if (rowData[mealTime][mealIndex] &&
+                rowData[mealTime][mealIndex].name &&
                 rowData[mealTime][mealIndex].name.trim() !== '') {
                 targetColumn = col;
                 break;
@@ -868,16 +868,16 @@ class EventSpreadsheet {
             if (this.hotInstance && targetRow >= 0 && targetColumn >= 0) {
                 try {
                     this.hotInstance.selectCell(targetRow, targetColumn);
-                    
+
                     // Only scroll if the cell is not currently visible
                     const viewport = this.hotInstance.view.wt.wtTable.getViewport();
                     const isRowVisible = targetRow >= viewport.TB && targetRow <= viewport.BB;
                     const isColVisible = targetColumn >= viewport.TL && targetColumn <= viewport.TR;
-                    
+
                     if (!isRowVisible || !isColVisible) {
                         this.hotInstance.scrollViewportTo(targetRow, targetColumn);
                     }
-                    
+
                     console.log(`Selected cell: row ${targetRow}, column ${targetColumn} for ${mealTime} meal on ${date}`);
                 } catch (error) {
                     console.warn('Failed to select cell:', error);
@@ -907,9 +907,9 @@ class EventSpreadsheet {
         for (let i = eventColumns.length - 1; i >= 0; i--) {
             const col = eventColumns[i];
             const eventIndex = col - 9; // Convert to event array index
-            
-            if (rowData.events[eventIndex] && 
-                rowData.events[eventIndex].text && 
+
+            if (rowData.events[eventIndex] &&
+                rowData.events[eventIndex].text &&
                 rowData.events[eventIndex].text.trim() !== '') {
                 targetColumn = col;
                 break;
@@ -926,16 +926,16 @@ class EventSpreadsheet {
             if (this.hotInstance && targetRow >= 0 && targetColumn >= 0) {
                 try {
                     this.hotInstance.selectCell(targetRow, targetColumn);
-                    
+
                     // Only scroll if the cell is not currently visible
                     const viewport = this.hotInstance.view.wt.wtTable.getViewport();
                     const isRowVisible = targetRow >= viewport.TB && targetRow <= viewport.BB;
                     const isColVisible = targetColumn >= viewport.TL && targetColumn <= viewport.TR;
-                    
+
                     if (!isRowVisible || !isColVisible) {
                         this.hotInstance.scrollViewportTo(targetRow, targetColumn);
                     }
-                    
+
                     console.log(`Selected cell: row ${targetRow}, column ${targetColumn} for event on ${date}`);
                 } catch (error) {
                     console.warn('Failed to select event cell:', error);
@@ -962,16 +962,16 @@ class EventSpreadsheet {
             if (this.hotInstance && targetRow >= 0 && targetColumn >= 0) {
                 try {
                     this.hotInstance.selectCell(targetRow, targetColumn);
-                    
+
                     // Only scroll if the cell is not currently visible
                     const viewport = this.hotInstance.view.wt.wtTable.getViewport();
                     const isRowVisible = targetRow >= viewport.TB && targetRow <= viewport.BB;
                     const isColVisible = targetColumn >= viewport.TL && targetColumn <= viewport.TR;
-                    
+
                     if (!isRowVisible || !isColVisible) {
                         this.hotInstance.scrollViewportTo(targetRow, targetColumn);
                     }
-                    
+
                     console.log(`Selected cell: row ${targetRow}, column ${targetColumn} for drink on ${date}`);
                 } catch (error) {
                     console.warn('Failed to select drink cell:', error);
@@ -1062,7 +1062,7 @@ class EventSpreadsheet {
 
         // Access the hiddenColumns plugin instance
         const hiddenColumnsPlugin = this.hotInstance.getPlugin('hiddenColumns');
-        
+
         // Hide the columns (we know they should be hidden because mealsAndDrinksHidden is true)
         hiddenColumnsPlugin.hideColumns(mealAndDrinkColumns);
 

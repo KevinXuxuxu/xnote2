@@ -263,7 +263,7 @@ class DetailForms {
         // Define the default meal types for each food source
         const defaultMealTypes = {
             'recipe': 'cooked',
-            'product': 'manufactured', 
+            'product': 'manufactured',
             'restaurant': 'dine-in'
         };
 
@@ -424,7 +424,7 @@ class DetailForms {
             } else {
                 // Create new event and track info for cell selection
                 const result = await this.createEvent(formData);
-                
+
                 // Track new event info for cell selection (meals, events, drinks in daily view)
                 if (window.eventSpreadsheet) {
                     if (this.currentEventType === 'meal') {

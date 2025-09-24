@@ -66,18 +66,18 @@ function setupControlButtons() {
     document.getElementById('clearSearchBtn').onclick = () => {
         const searchInput = document.getElementById('searchText');
         const clearButton = document.getElementById('clearSearchBtn');
-        
+
         searchInput.value = '';
-        
+
         // Hide the clear button immediately
         clearButton.classList.remove('visible');
-        
+
         // Trigger the search to clear results immediately
         const filters = {
             searchText: ''
         };
         window.eventSpreadsheet.setFilters(filters);
-        
+
         // Update URL to remove search parameter
         updateUrlFilters(
             document.getElementById('startDate').value,
@@ -89,7 +89,7 @@ function setupControlButtons() {
     // Navigation dropdown toggle
     const navDropdownToggle = document.querySelector('.nav-dropdown-toggle');
     const navDropdownMenu = document.querySelector('.nav-dropdown-menu');
-    
+
     if (navDropdownToggle && navDropdownMenu) {
         navDropdownToggle.onclick = (e) => {
             e.stopPropagation();
@@ -133,7 +133,7 @@ function setupFilters() {
     // Add real-time search filtering with debounce
     const searchInput = document.getElementById('searchText');
     const clearButton = document.getElementById('clearSearchBtn');
-    
+
     // Function to toggle clear button visibility
     const updateClearButtonVisibility = () => {
         if (searchInput.value.trim().length > 0) {
@@ -153,7 +153,7 @@ function setupFilters() {
     }, 300);
 
     searchInput.addEventListener('input', debouncedSearch);
-    
+
     // Set initial visibility state
     updateClearButtonVisibility();
 }
