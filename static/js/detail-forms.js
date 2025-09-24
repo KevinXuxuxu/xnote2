@@ -70,7 +70,7 @@ class DetailForms {
         }
     }
 
-    async openDetails(id, eventType) {
+    async openDetails(id, eventType, date = null, eventInfo = null) {
         this.currentEventId = id;
         this.currentEventType = eventType;
 
@@ -81,7 +81,7 @@ class DetailForms {
                 this.modalTitle.textContent = `Edit ${this.capitalize(eventType)}`;
             } else {
                 // Create new event
-                this.currentData = this.getDefaultData(eventType);
+                this.currentData = this.getDefaultData(eventType, date, eventInfo);
                 this.modalTitle.textContent = `New ${this.capitalize(eventType)}`;
             }
 
@@ -93,21 +93,21 @@ class DetailForms {
         }
     }
 
-    getDefaultData(eventType) {
-        const today = window.dateUtils.getTodayLocal();
+    getDefaultData(eventType, date = null, eventInfo = null) {
+        const useDate = date || window.dateUtils.getTodayLocal();
 
         switch (eventType) {
             case 'meal':
                 return {
-                    date: today,
-                    time: 'lunch',
+                    date: useDate,
+                    time: (eventInfo && eventInfo.time) || 'lunch',
                     notes: '',
                     food_source: null,
                     people: []
                 };
             case 'event':
                 return {
-                    date: today,
+                    date: useDate,
                     activity: null,
                     measure: '',
                     location: '',
@@ -116,7 +116,7 @@ class DetailForms {
                 };
             case 'drink':
                 return {
-                    date: today,
+                    date: useDate,
                     name: '',
                     people: []
                 };

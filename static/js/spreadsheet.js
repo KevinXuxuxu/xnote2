@@ -209,7 +209,8 @@ class EventSpreadsheet {
             },
             afterChange: this.onCellChange.bind(this),
             afterRemoveRow: this.onRowRemove.bind(this),
-            beforeCreateRow: this.onRowCreate.bind(this)
+            beforeCreateRow: this.onRowCreate.bind(this),
+            afterOnCellMouseUp: this.onCellMouseUp.bind(this)
         };
 
         this.hotInstance = new Handsontable(container, config);
@@ -1068,6 +1069,131 @@ class EventSpreadsheet {
 
         // Re-render to see the changes
         this.hotInstance.render();
+    }
+
+    /**
+     * Handle mouse up events for double-click detection
+     */
+    onCellMouseUp(event, coords) {
+        if (!coords) return;
+
+        const row = coords.row;
+        const col = coords.col;
+        
+        // Check if this is a double-click
+        const now = Date.now();
+        if (this.lastClickInfo && 
+            this.lastClickInfo.row === row && 
+            this.lastClickInfo.col === col &&
+            (now - this.lastClickInfo.time) < 300) {
+            
+            // Double-click detected
+            this.handleCellDoubleClick(row, col);
+            this.lastClickInfo = null;
+        } else {
+            // Single-click - store for potential double-click
+            this.lastClickInfo = {
+                row: row,
+                col: col,
+                time: now
+            };
+        }
+    }
+
+    /**
+     * Handle double-click on a cell
+     */
+    handleCellDoubleClick(row, col) {
+        const rowData = this.filteredData[row];
+        if (!rowData) return;
+
+        // Check if cell is empty
+        if (this.isCellEmpty(row, col)) {
+            const eventInfo = this.getColumnEventType(col);
+            if (eventInfo) {
+                // Open the appropriate form with the date pre-filled
+                if (window.detailForms) {
+                    window.detailForms.openDetails(null, eventInfo.type, rowData.date, eventInfo);
+                }
+            }
+        }
+    }
+
+    /**
+     * Check if a cell is empty
+     */
+    isCellEmpty(row, col) {
+        const rowData = this.filteredData[row];
+        if (!rowData) return true;
+
+        // Get the cell data based on column
+        const colConfig = this.hotInstance.getColHeader(col);
+        if (!colConfig) return true;
+
+        // Extract the data property from column configuration
+        const column = this.hotInstance.getCellMeta(row, col);
+        if (!column || !column.data) return true;
+
+        const prop = column.data;
+        
+        // Handle nested properties like "breakfast.0" or "events.5"
+        const propPath = prop.split('.');
+        let cellData = rowData;
+        
+        for (const pathPart of propPath) {
+            if (cellData === null || cellData === undefined) return true;
+            cellData = cellData[pathPart];
+        }
+
+        // Check if the cell data is empty
+        if (cellData === null || cellData === undefined || cellData === '') return true;
+        
+        // For objects, check if they have meaningful content
+        if (typeof cellData === 'object') {
+            if (Array.isArray(cellData)) {
+                return cellData.length === 0;
+            }
+            
+            // Check for meal/event objects
+            if (cellData.ids && Array.isArray(cellData.ids)) {
+                return cellData.ids.length === 0;
+            }
+            
+            if (cellData.text && cellData.text.trim() !== '') {
+                return false;
+            }
+            
+            if (cellData.name && cellData.name.trim() !== '') {
+                return false;
+            }
+            
+            return true;
+        }
+
+        // For strings, check if empty after trimming
+        if (typeof cellData === 'string') {
+            return cellData.trim() === '';
+        }
+
+        return false;
+    }
+
+    /**
+     * Map column index to event type
+     */
+    getColumnEventType(col) {
+        if (col >= 2 && col <= 3) {
+            return { type: 'meal', time: 'breakfast' };
+        } else if (col >= 4 && col <= 5) {
+            return { type: 'meal', time: 'lunch' };
+        } else if (col >= 6 && col <= 7) {
+            return { type: 'meal', time: 'dinner' };
+        } else if (col === 8) {
+            return { type: 'drink' };
+        } else if (col >= 9 && col <= 18) {
+            return { type: 'event' };
+        }
+        return null;
     }
 
     /**
