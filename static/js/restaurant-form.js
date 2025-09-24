@@ -210,6 +210,17 @@ class RestaurantForm {
                 return;
             }
 
+            // Check for potential duplicates
+            const existingRestaurants = await apiClient.getRestaurants();
+            const duplicates = window.duplicateUtils.findPotentialDuplicates(formData.name, existingRestaurants);
+            
+            if (duplicates.length > 0) {
+                const confirmed = window.duplicateUtils.showDuplicateConfirmation('Restaurant', formData.name, duplicates);
+                if (!confirmed) {
+                    return; // User cancelled the creation
+                }
+            }
+
             await apiClient.createRestaurant(formData);
 
             // Refresh the restaurant spreadsheet

@@ -89,6 +89,17 @@ class DrinkOptionForm {
                 return;
             }
 
+            // Check for potential duplicates
+            const existingDrinkOptions = await apiClient.getDrinkOptions();
+            const duplicates = window.duplicateUtils.findPotentialDuplicates(formData.name, existingDrinkOptions);
+            
+            if (duplicates.length > 0) {
+                const confirmed = window.duplicateUtils.showDuplicateConfirmation('Drink Option', formData.name, duplicates);
+                if (!confirmed) {
+                    return; // User cancelled the creation
+                }
+            }
+
             await apiClient.createDrinkOption(formData);
 
             // Refresh the drink option spreadsheet

@@ -156,6 +156,17 @@ class ActivityForm {
                 return;
             }
 
+            // Check for potential duplicates
+            const existingActivities = await apiClient.getActivities();
+            const duplicates = window.duplicateUtils.findPotentialDuplicates(formData.name, existingActivities);
+            
+            if (duplicates.length > 0) {
+                const confirmed = window.duplicateUtils.showDuplicateConfirmation('Activity', formData.name, duplicates);
+                if (!confirmed) {
+                    return; // User cancelled the creation
+                }
+            }
+
             await apiClient.createActivity(formData);
 
             // Refresh the activity spreadsheet
