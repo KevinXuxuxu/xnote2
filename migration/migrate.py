@@ -1,6 +1,6 @@
 import psycopg2
 import csv
-from typing import List, Tuple
+from typing import List, Tuple, Callable
 import re
 from dataclasses import dataclass
 
@@ -109,12 +109,15 @@ def extract_meal(
     food_source: str = None,
     exact: bool = True,
     dry_run: bool = False,
+    matcher: Callable = None,
 ) -> List[Meal]:
     def match(meal: Meal) -> bool:
         if exact:
             return keyword.lower() == meal.name.lower()
         return keyword.lower() in meal.name.lower()
 
+    if not matcher:
+        matcher = match
     rtn = []
     for day in days:
         for time in ["breakfast", "lunch", "dinner"]:
@@ -123,7 +126,7 @@ def extract_meal(
             for i, cell in enumerate(meals):
                 who = get_who(food_source, i, len(meals))
                 for j, meal in enumerate(cell):
-                    if match(meal):
+                    if matcher(meal):
                         meal.people += who
                         rtn.append(meal)
                         extracted_idx.append((i, j))
@@ -251,12 +254,18 @@ def insert_one_food(
     exact: bool = True,
     meal_type_override: str = None,
     comment_override: str = None,
+    matcher: Callable = None,
 ):
     if not replace_name:
         replace_name = food_name
     meals = merge_meal(
         extract_meal(
-            food_name, days, food_source=food_source, exact=exact, dry_run=True
+            food_name,
+            days,
+            food_source=food_source,
+            exact=exact,
+            dry_run=True,
+            matcher=matcher,
         )
     )
     if not meals:
@@ -269,7 +278,9 @@ def insert_one_food(
         meal_type_override=meal_type_override,
         comment_override=comment_override,
     ):
-        extract_meal(food_name, days, food_source=food_source, exact=exact)
+        extract_meal(
+            food_name, days, food_source=food_source, exact=exact, matcher=matcher
+        )
 
 
 conn = psycopg2.connect(dbname="xnote", user="postgres", host="localhost", port="5432")
@@ -302,11 +313,36 @@ clear_names(
         "小葱拌豆腐",
         "牛丼",
         "猪脚饭",
+        "鸡肉炖粉条",
+        "餐车卤肉饭",
+        "chipotle",
+        "速食螺蛳粉",
     ],
     data,
 )
 clear_names(
-    ["盐焗鸡", "YGF", "McDonald", "西红柿鸡蛋面", "croissant", "方便面", "阳春面"],
+    [
+        "盐焗鸡",
+        "YGF",
+        "McDonald",
+        "西红柿鸡蛋面",
+        "croissant",
+        "方便面",
+        "阳春面",
+        "白汤意面",
+        "猪蹄",
+        "impecc",
+        "泡面",
+        "可乐鸡翅",
+        "茄丁",
+        "牛油果",
+    ],
     data,
     exact=False,
 )
+matchers = [
+    lambda m: "意面" in m.name and "番茄" in m.name,
+    lambda m: "意面" in m.name and "奶油" in m.name,
+]
+for i, matcher in enumerate(matchers):
+    extract_meal(f"matcher {i}", data, matcher=matcher)
