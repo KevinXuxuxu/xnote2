@@ -127,11 +127,11 @@ def extract_meal(
             for i, cell in enumerate(meals):
                 who = get_who(food_source, i, len(meals))
                 if multi_matcher:
-                    idxs = multi_matcher(cell)
-                    if idxs:
-                        cell[idxs[0]].people += who
-                        rtn.append(cell[idxs[0]])
-                        extracted_idx.extend([(i, j) for j in idxs])
+                    indexes = multi_matcher(cell)
+                    if indexes:
+                        cell[indexes[0]].people += who
+                        rtn.append(cell[indexes[0]])
+                        extracted_idx.extend([(i, j) for j in indexes])
                     continue
                 for j, meal in enumerate(cell):
                     if matcher(meal):
@@ -304,9 +304,9 @@ data = parse("old_data.csv")
 
 def multi_matcher_factory(keywords: List[str]) -> Callable:
     def matcher(cell):
-        mnames = [m.name for m in cell]
-        idxs = [mnames.index(k) for k in keywords if k in mnames]
-        return idxs if len(idxs) == len(keywords) else []
+        meal_names = [m.name for m in cell]
+        indexes = [meal_names.index(k) for k in keywords if k in meal_names]
+        return indexes if len(indexes) == len(keywords) else []
 
     return matcher
 
