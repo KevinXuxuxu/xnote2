@@ -136,9 +136,105 @@ async fn get_event(pool: web::Data<PgPool>, path: web::Path<i32>) -> Result<Http
     }
 }
 
-async fn update_event(_pool: web::Data<PgPool>, _path: web::Path<i32>) -> Result<HttpResponse> {
+async fn update_event(
+    pool: web::Data<PgPool>,
+    path: web::Path<i32>,
+    event_data: web::Json<CreateEvent>,
+) -> Result<HttpResponse> {
+    let event_id = path.into_inner();
+    
+    // Start transaction
+    let mut tx = match pool.begin().await {
+        Ok(tx) => tx,
+        Err(e) => {
+            log::error!("Failed to start transaction: {}", e);
+            return Ok(HttpResponse::InternalServerError().json(serde_json::json!({
+                "error": "Failed to update event"
+            })));
+        }
+    };
+
+    // Step 1: Check if event exists
+    let existing_event = match sqlx::query_as::<_, Event>(
+        "SELECT id, date, activity, measure, location, notes FROM event WHERE id = $1"
+    )
+    .bind(event_id)
+    .fetch_optional(&mut *tx)
+    .await
+    {
+        Ok(Some(event)) => event,
+        Ok(None) => {
+            return Ok(HttpResponse::NotFound().json(serde_json::json!({
+                "error": "Event not found"
+            })));
+        }
+        Err(e) => {
+            log::error!("Failed to fetch event: {}", e);
+            return Ok(HttpResponse::InternalServerError().json(serde_json::json!({
+                "error": "Failed to update event"
+            })));
+        }
+    };
+
+    // Step 2: Update the main event record
+    if let Err(e) = sqlx::query!(
+        r#"
+        UPDATE event 
+        SET date = $1, activity = $2, measure = $3, location = $4, notes = $5 
+        WHERE id = $6
+        "#,
+        event_data.date,
+        event_data.activity_id,
+        event_data.measure,
+        event_data.location,
+        event_data.notes,
+        event_id
+    )
+    .execute(&mut *tx)
+    .await
+    {
+        log::error!("Failed to update event: {}", e);
+        let _ = tx.rollback().await;
+        return Ok(HttpResponse::InternalServerError().json(serde_json::json!({
+            "error": "Failed to update event"
+        })));
+    }
+
+    // Step 3: Remove existing people relationships
+    let _ = sqlx::query!("DELETE FROM event_people WHERE event = $1", event_id)
+        .execute(&mut *tx)
+        .await;
+
+    // Step 4: Insert new people relationships
+    for person_id in &event_data.people_ids {
+        if let Err(e) = sqlx::query!(
+            "INSERT INTO event_people (event, people) VALUES ($1, $2)",
+            event_id,
+            person_id
+        )
+        .execute(&mut *tx)
+        .await
+        {
+            log::error!("Failed to update event people relationship: {}", e);
+            let _ = tx.rollback().await;
+            return Ok(HttpResponse::InternalServerError().json(serde_json::json!({
+                "error": "Failed to update event people relationships"
+            })));
+        }
+    }
+
+    // Step 5: Commit transaction
+    if let Err(e) = tx.commit().await {
+        log::error!("Failed to commit transaction: {}", e);
+        return Ok(HttpResponse::InternalServerError().json(serde_json::json!({
+            "error": "Failed to update event"
+        })));
+    }
+
+    // Return success response
     Ok(HttpResponse::Ok().json(serde_json::json!({
-        "message": "Update event - TODO: implement"
+        "message": "Event updated successfully",
+        "id": event_id
     })))
 }
 

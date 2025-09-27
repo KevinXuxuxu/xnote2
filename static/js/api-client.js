@@ -405,12 +405,17 @@ class ApiClient {
             case 'meal':
                 return this.getMealDetails(id);
             case 'event':
-                return this.getEventDetails(id);
+                return this.getEventDetailsInternal(id);
             case 'drink':
                 return this.getDrinkDetails(id);
             default:
                 throw new Error(`Unknown event type: ${type}`);
         }
+    }
+
+    // Internal method to get event details without type parameter
+    async getEventDetailsInternal(id) {
+        return this.request(`/events/${id}/details`);
     }
 }
 

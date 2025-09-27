@@ -182,9 +182,162 @@ async fn get_meal(pool: web::Data<PgPool>, path: web::Path<i32>) -> Result<HttpR
     }
 }
 
-async fn update_meal(_pool: web::Data<PgPool>, _path: web::Path<i32>) -> Result<HttpResponse> {
+async fn update_meal(
+    pool: web::Data<PgPool>,
+    path: web::Path<i32>,
+    meal_data: web::Json<CreateMeal>,
+) -> Result<HttpResponse> {
+    let meal_id = path.into_inner();
+    
+    // Start transaction
+    let mut tx = match pool.begin().await {
+        Ok(tx) => tx,
+        Err(e) => {
+            log::error!("Failed to start transaction: {}", e);
+            return Ok(HttpResponse::InternalServerError().json(serde_json::json!({
+                "error": "Failed to update meal"
+            })));
+        }
+    };
+
+    // Step 1: Check if meal exists
+    let existing_meal = match sqlx::query_as::<_, Meal>(
+        "SELECT id, date, \"time\", notes FROM meal WHERE id = $1"
+    )
+    .bind(meal_id)
+    .fetch_optional(&mut *tx)
+    .await
+    {
+        Ok(Some(meal)) => meal,
+        Ok(None) => {
+            return Ok(HttpResponse::NotFound().json(serde_json::json!({
+                "error": "Meal not found"
+            })));
+        }
+        Err(e) => {
+            log::error!("Failed to fetch meal: {}", e);
+            return Ok(HttpResponse::InternalServerError().json(serde_json::json!({
+                "error": "Failed to update meal"
+            })));
+        }
+    };
+
+    // Step 2: Update the main meal record
+    if let Err(e) = sqlx::query!(
+        r#"UPDATE meal SET date = $1, "time" = $2, notes = $3 WHERE id = $4"#,
+        meal_data.date,
+        meal_data.time,
+        meal_data.notes,
+        meal_id
+    )
+    .execute(&mut *tx)
+    .await
+    {
+        log::error!("Failed to update meal: {}", e);
+        let _ = tx.rollback().await;
+        return Ok(HttpResponse::InternalServerError().json(serde_json::json!({
+            "error": "Failed to update meal"
+        })));
+    }
+
+    // Step 3: Remove existing food source relationships
+    // Delete from all food source tables (only one will have data)
+    let _ = sqlx::query!("DELETE FROM meal_recipe WHERE meal = $1", meal_id)
+        .execute(&mut *tx)
+        .await;
+    let _ = sqlx::query!("DELETE FROM meal_product WHERE meal = $1", meal_id)
+        .execute(&mut *tx)
+        .await;
+    let _ = sqlx::query!("DELETE FROM meal_restaurant WHERE meal = $1", meal_id)
+        .execute(&mut *tx)
+        .await;
+
+    // Step 4: Insert new food source relationship
+    let food_source_result = match &meal_data.food_source {
+        CreateMealFoodSource::Recipe {
+            recipe_id,
+            meal_type,
+        } => {
+            sqlx::query!(
+                "INSERT INTO meal_recipe (meal, recipe, type) VALUES ($1, $2, $3)",
+                meal_id,
+                recipe_id,
+                meal_type
+            )
+            .execute(&mut *tx)
+            .await
+        }
+        CreateMealFoodSource::Product {
+            product_id,
+            meal_type,
+        } => {
+            sqlx::query!(
+                "INSERT INTO meal_product (meal, product, type) VALUES ($1, $2, $3)",
+                meal_id,
+                product_id,
+                meal_type
+            )
+            .execute(&mut *tx)
+            .await
+        }
+        CreateMealFoodSource::Restaurant {
+            restaurant_id,
+            meal_type,
+        } => {
+            sqlx::query!(
+                "INSERT INTO meal_restaurant (meal, restaurant, type) VALUES ($1, $2, $3)",
+                meal_id,
+                restaurant_id,
+                meal_type
+            )
+            .execute(&mut *tx)
+            .await
+        }
+    };
+
+    if let Err(e) = food_source_result {
+        log::error!("Failed to update meal food source: {}", e);
+        let _ = tx.rollback().await;
+        return Ok(HttpResponse::InternalServerError().json(serde_json::json!({
+            "error": "Failed to update meal food source"
+        })));
+    }
+
+    // Step 5: Remove existing people relationships
+    let _ = sqlx::query!("DELETE FROM meal_people WHERE meal = $1", meal_id)
+        .execute(&mut *tx)
+        .await;
+
+    // Step 6: Insert new people relationships
+    for person_id in &meal_data.people_ids {
+        if let Err(e) = sqlx::query!(
+            "INSERT INTO meal_people (meal, people) VALUES ($1, $2)",
+            meal_id,
+            person_id
+        )
+        .execute(&mut *tx)
+        .await
+        {
+            log::error!("Failed to update meal people relationship: {}", e);
+            let _ = tx.rollback().await;
+            return Ok(HttpResponse::InternalServerError().json(serde_json::json!({
+                "error": "Failed to update meal people relationships"
+            })));
+        }
+    }
+
+    // Step 7: Commit transaction
+    if let Err(e) = tx.commit().await {
+        log::error!("Failed to commit transaction: {}", e);
+        return Ok(HttpResponse::InternalServerError().json(serde_json::json!({
+            "error": "Failed to update meal"
+        })));
+    }
+
+    // Return success response
     Ok(HttpResponse::Ok().json(serde_json::json!({
-        "message": "Update meal - TODO: implement"
+        "message": "Meal updated successfully",
+        "id": meal_id
     })))
 }
 

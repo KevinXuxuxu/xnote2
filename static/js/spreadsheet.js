@@ -1116,6 +1116,12 @@ class EventSpreadsheet {
                     window.detailForms.openDetails(null, eventInfo.type, rowData.date, eventInfo);
                 }
             }
+        } else {
+            // Cell has content - open for editing
+            const eventInfo = this.getColumnEventType(col);
+            if (eventInfo) {
+                this.openForEditing(row, col, eventInfo);
+            }
         }
     }
 
@@ -1176,6 +1182,123 @@ class EventSpreadsheet {
         }
 
         return false;
+    }
+
+    /**
+     * Open existing item for editing
+     */
+    openForEditing(row, col, eventInfo) {
+        const rowData = this.filteredData[row];
+        if (!rowData || !eventInfo) return;
+
+        // Get the column data property
+        const column = this.hotInstance.getCellMeta(row, col);
+        if (!column || !column.data) return;
+
+        const prop = column.data;
+        
+        if (eventInfo.type === 'meal') {
+            this.openMealForEditing(row, prop, eventInfo.time);
+        } else if (eventInfo.type === 'drink') {
+            this.openDrinkForEditing(row);
+        } else if (eventInfo.type === 'event') {
+            this.openEventForEditing(row, prop);
+        }
+    }
+
+    /**
+     * Open meal for editing
+     */
+    async openMealForEditing(row, prop, mealTime) {
+        const rowData = this.filteredData[row];
+        if (!rowData) return;
+
+        // Extract meal index from prop (e.g., "breakfast.0")
+        const [, indexStr] = prop.split('.');
+        const index = parseInt(indexStr);
+
+        if (rowData[mealTime] && rowData[mealTime][index]) {
+            const meal = rowData[mealTime][index];
+            
+            // For meals with multiple IDs, fetch details for each meal
+            if (meal.ids && meal.ids.length > 0) {
+                try {
+                    // Fetch complete meal details for all meals in this cell
+                    const mealDetailsPromises = meal.ids.map(mealId => 
+                        apiClient.getMealDetails(mealId)
+                    );
+                    const allMealDetails = await Promise.all(mealDetailsPromises);
+                    
+                    if (window.detailForms) {
+                        // Create enhanced details with all meal information
+                        const enhancedDetails = {
+                            meals: allMealDetails, // Array of all meal details
+                            editingTime: mealTime,  // Add the meal time context
+                            isMultiMeal: meal.ids.length > 1 // Flag for multi-meal editing
+                        };
+                        
+                        // Store the enhanced details temporarily and open the form
+                        window.detailForms.currentData = enhancedDetails;
+                        window.detailForms.currentEventIds = meal.ids; // Store all meal IDs
+                        window.detailForms.currentEventType = 'meal';
+                        window.detailForms.modalTitle.textContent = `Edit ${meal.ids.length} Meal${meal.ids.length > 1 ? 's' : ''}`;
+                        window.detailForms.renderForm();
+                        window.detailForms.modal.style.display = 'block';
+                    }
+                } catch (error) {
+                    console.error('Failed to fetch meal details for editing:', error);
+                    alert('Failed to load meal details for editing. Please try again.');
+                }
+            }
+        }
+    }
+
+    /**
+     * Open drink for editing
+     */
+    openDrinkForEditing(row) {
+        const rowData = this.filteredData[row];
+        if (!rowData || !rowData.drinks || rowData.drinks.length === 0) return;
+
+        // The daily summary API only provides drink names as formatted strings, not IDs
+        // This makes it impossible to identify which specific drink to edit
+        // Drink editing would require API enhancements to include drink IDs in the daily summary
+        alert('Drink editing is not available from the daily view. The daily summary only shows drink names without IDs. Please use the Drinks page to edit drinks.');
+    }
+
+    /**
+     * Open event for editing
+     */
+    async openEventForEditing(row, prop) {
+        const rowData = this.filteredData[row];
+        if (!rowData) return;
+
+        // Extract event index from prop (e.g., "events.0")
+        const [, indexStr] = prop.split('.');
+        const index = parseInt(indexStr);
+
+        if (rowData.events && rowData.events[index]) {
+            const event = rowData.events[index];
+            if (event.id) {
+                try {
+                    // Fetch complete event details for editing
+                    const eventDetails = await apiClient.getEventDetails(event.id, 'event');
+                    
+                    if (window.detailForms) {
+                        // Store the enhanced details temporarily and open the form
+                        window.detailForms.currentData = eventDetails;
+                        window.detailForms.currentEventId = event.id;
+                        window.detailForms.currentEventType = 'event';
+                        window.detailForms.modalTitle.textContent = `Edit Event`;
+                        window.detailForms.renderForm();
+                        window.detailForms.modal.style.display = 'block';
+                    }
+                } catch (error) {
+                    console.error('Failed to fetch event details for editing:', error);
+                    alert('Failed to load event details for editing. Please try again.');
+                }
+            }
+        }
     }
 
     /**

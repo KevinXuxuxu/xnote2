@@ -142,26 +142,51 @@ class DetailForms {
     renderMealForm() {
         const data = this.currentData;
 
+        // Handle both detailed meal data (from API) and default data (for new meals)
+        const isEditMode = this.currentEventId !== null || (this.currentEventIds && this.currentEventIds.length > 0);
+        const isMultiMeal = data.isMultiMeal || false;
+        
+        // Always use the first meal as template (data structure is consistent)
+        const templateMeal = isEditMode && data.meals && data.meals.length > 0 ? data.meals[0] : data;
+        
+        const mealTime = isEditMode ? (templateMeal.time || data.editingTime || 'lunch') : (templateMeal.time || 'lunch');
+        const mealDate = isEditMode ? (templateMeal.date || window.dateUtils.getTodayLocal()) : (templateMeal.date || window.dateUtils.getTodayLocal());
+        const mealNotes = isEditMode ? (templateMeal.notes || '') : (templateMeal.notes || '');
+        const foodSourceType = isEditMode && templateMeal.food_source ? templateMeal.food_source.type : (data.food_source?.type || 'recipe');
+        const mealType = this.getFoodSourceMealType();
+        const people = isEditMode ? (templateMeal.people || []) : (data.people || []);
+
+        // Add multi-meal info if applicable
+        const multiMealInfo = isMultiMeal ? `
+            <div class="multi-meal-info" style="background-color: #e3f2fd; padding: 10px; border-radius: 4px; margin-bottom: 15px;">
+                <strong>Editing ${data.meals.length} meals</strong>
+                <p style="margin: 5px 0 0 0; font-size: 14px; color: #666;">
+                    Changes will apply to all ${data.meals.length} meals in this cell
+                </p>
+            </div>
+        ` : '';
+
         this.modalBody.innerHTML = `
             <form id="mealForm">
+                ${multiMealInfo}
                 <div class="form-row">
                     <div class="form-group">
                         <label for="mealDate">Date</label>
-                        <input type="date" id="mealDate" name="date" value="${data.date || ''}" required>
+                        <input type="date" id="mealDate" name="date" value="${mealDate}" required>
                     </div>
                     <div class="form-group">
                         <label>Meal Time</label>
                         <div class="choice-list">
                             <label class="choice-option">
-                                <input type="radio" name="time" value="breakfast" ${data.time === 'breakfast' ? 'checked' : ''} required>
+                                <input type="radio" name="time" value="breakfast" ${mealTime === 'breakfast' ? 'checked' : ''} required>
                                 <span class="choice-label">Breakfast</span>
                             </label>
                             <label class="choice-option">
-                                <input type="radio" name="time" value="lunch" ${data.time === 'lunch' ? 'checked' : ''} required>
+                                <input type="radio" name="time" value="lunch" ${mealTime === 'lunch' ? 'checked' : ''} required>
                                 <span class="choice-label">Lunch</span>
                             </label>
                             <label class="choice-option">
-                                <input type="radio" name="time" value="dinner" ${data.time === 'dinner' ? 'checked' : ''} required>
+                                <input type="radio" name="time" value="dinner" ${mealTime === 'dinner' ? 'checked' : ''} required>
                                 <span class="choice-label">Dinner</span>
                             </label>
                         </div>
@@ -172,15 +197,15 @@ class DetailForms {
                     <label>Food Source</label>
                     <div class="choice-list">
                         <label class="choice-option">
-                            <input type="radio" name="foodSourceType" value="recipe" ${data.food_source?.type === 'recipe' ? 'checked' : ''} required>
+                            <input type="radio" name="foodSourceType" value="recipe" ${foodSourceType === 'recipe' ? 'checked' : ''} required>
                             <span class="choice-label">Recipe</span>
                         </label>
                         <label class="choice-option">
-                            <input type="radio" name="foodSourceType" value="product" ${data.food_source?.type === 'product' ? 'checked' : ''} required>
+                            <input type="radio" name="foodSourceType" value="product" ${foodSourceType === 'product' ? 'checked' : ''} required>
                             <span class="choice-label">Product</span>
                         </label>
                         <label class="choice-option">
-                            <input type="radio" name="foodSourceType" value="restaurant" ${data.food_source?.type === 'restaurant' ? 'checked' : ''} required>
+                            <input type="radio" name="foodSourceType" value="restaurant" ${foodSourceType === 'restaurant' ? 'checked' : ''} required>
                             <span class="choice-label">Restaurant</span>
                         </label>
                     </div>
@@ -192,23 +217,23 @@ class DetailForms {
                     <label>Meal Type</label>
                     <div class="choice-list">
                         <label class="choice-option">
-                            <input type="radio" name="mealType" value="cooked" ${this.getFoodSourceMealType() === 'cooked' ? 'checked' : ''}>
+                            <input type="radio" name="mealType" value="cooked" ${mealType === 'cooked' ? 'checked' : ''}>
                             <span class="choice-label">Cooked</span>
                         </label>
                         <label class="choice-option">
-                            <input type="radio" name="mealType" value="dine-in" ${this.getFoodSourceMealType() === 'dine-in' ? 'checked' : ''}>
+                            <input type="radio" name="mealType" value="dine-in" ${mealType === 'dine-in' ? 'checked' : ''}>
                             <span class="choice-label">Dine-in</span>
                         </label>
                         <label class="choice-option">
-                            <input type="radio" name="mealType" value="takeout" ${this.getFoodSourceMealType() === 'takeout' ? 'checked' : ''}>
+                            <input type="radio" name="mealType" value="takeout" ${mealType === 'takeout' ? 'checked' : ''}>
                             <span class="choice-label">Takeout</span>
                         </label>
                         <label class="choice-option">
-                            <input type="radio" name="mealType" value="manufactured" ${this.getFoodSourceMealType() === 'manufactured' ? 'checked' : ''}>
+                            <input type="radio" name="mealType" value="manufactured" ${mealType === 'manufactured' ? 'checked' : ''}>
                             <span class="choice-label">Manufactured</span>
                         </label>
                         <label class="choice-option">
-                            <input type="radio" name="mealType" value="leftover" ${this.getFoodSourceMealType() === 'leftover' ? 'checked' : ''}>
+                            <input type="radio" name="mealType" value="leftover" ${mealType === 'leftover' ? 'checked' : ''}>
                             <span class="choice-label">Leftover</span>
                         </label>
                     </div>
@@ -217,13 +242,13 @@ class DetailForms {
                 <div class="form-group">
                     <label for="mealPeople">People</label>
                     <select id="mealPeople" name="people" multiple>
-                        ${this.renderPeopleOptions(data.people)}
+                        ${this.renderPeopleOptions(people)}
                     </select>
                 </div>
                 
                 <div class="form-group">
                     <label for="mealNotes">Notes</label>
-                    <textarea id="mealNotes" name="notes" placeholder="Additional notes...">${data.notes || ''}</textarea>
+                    <textarea id="mealNotes" name="notes" placeholder="Additional notes...">${mealNotes}</textarea>
                 </div>
             </form>
         `;
@@ -240,8 +265,8 @@ class DetailForms {
         });
 
         // Render initial food source details
-        if (data.food_source) {
-            this.renderFoodSourceDetails(data.food_source.type);
+        if (foodSourceType) {
+            this.renderFoodSourceDetails(foodSourceType);
         }
 
         // Initialize Choices.js for all selectors
@@ -250,9 +275,14 @@ class DetailForms {
 
     getFoodSourceMealType() {
         const data = this.currentData;
-        if (data.food_source && data.food_source.details) {
-            return data.food_source.details.meal_type;
+        
+        // Always use the first meal as template (data structure is consistent)
+        const templateMeal = data.meals && data.meals.length > 0 ? data.meals[0] : data;
+        
+        if (templateMeal.food_source && templateMeal.food_source.details && templateMeal.food_source.details.meal_type) {
+            return templateMeal.food_source.details.meal_type;
         }
+        
         return 'cooked';
     }
 
@@ -279,6 +309,22 @@ class DetailForms {
     renderFoodSourceDetails(type) {
         const container = document.getElementById('foodSourceDetails');
         const data = this.currentData;
+        const isEditMode = this.currentEventId !== null || (this.currentEventIds && this.currentEventIds.length > 0);
+
+        // Always use the first meal as template (data structure is consistent)
+        const templateMeal = isEditMode && data.meals && data.meals.length > 0 ? data.meals[0] : data;
+        const foodSourceData = templateMeal.food_source;
+
+        let selectedId = null;
+        if (isEditMode && foodSourceData?.details) {
+            if (type === 'recipe' && foodSourceData.details.recipe) {
+                selectedId = foodSourceData.details.recipe.id;
+            } else if (type === 'product' && foodSourceData.details.product) {
+                selectedId = foodSourceData.details.product.id;
+            } else if (type === 'restaurant' && foodSourceData.details.restaurant) {
+                selectedId = foodSourceData.details.restaurant.id;
+            }
+        }
 
         switch (type) {
             case 'recipe':
@@ -287,7 +333,7 @@ class DetailForms {
                         <label for="recipeSelect">Recipes</label>
                         <select id="recipeSelect" name="recipes" multiple>
                             ${this.enumData.recipes.map(recipe =>
-                    `<option value="${recipe.id}" ${data.food_source?.details?.recipe?.id === recipe.id ? 'selected' : ''}>${recipe.name}</option>`
+                    `<option value="${recipe.id}" ${selectedId === recipe.id ? 'selected' : ''}>${recipe.name}</option>`
                 ).join('')}
                         </select>
                     </div>
@@ -299,7 +345,7 @@ class DetailForms {
                         <label for="productSelect">Products</label>
                         <select id="productSelect" name="products" multiple>
                             ${this.enumData.products.map(product =>
-                    `<option value="${product.id}" ${data.food_source?.details?.product?.id === product.id ? 'selected' : ''}>${product.name}</option>`
+                    `<option value="${product.id}" ${selectedId === product.id ? 'selected' : ''}>${product.name}</option>`
                 ).join('')}
                         </select>
                     </div>
@@ -311,7 +357,7 @@ class DetailForms {
                         <label for="restaurantSelect">Restaurants</label>
                         <select id="restaurantSelect" name="restaurants" multiple>
                             ${this.enumData.restaurants.map(restaurant =>
-                    `<option value="${restaurant.id}" ${data.food_source?.details?.restaurant?.id === restaurant.id ? 'selected' : ''}>${restaurant.name}</option>`
+                    `<option value="${restaurant.id}" ${selectedId === restaurant.id ? 'selected' : ''}>${restaurant.name}</option>`
                 ).join('')}
                         </select>
                     </div>
@@ -418,7 +464,7 @@ class DetailForms {
             const formData = this.collectFormData();
             let newEventInfo = null;
 
-            if (this.currentEventId) {
+            if (this.currentEventId || (this.currentEventIds && this.currentEventIds.length > 0)) {
                 // Update existing event
                 await this.updateEvent(formData);
             } else {
@@ -670,7 +716,56 @@ class DetailForms {
     async updateEvent(formData) {
         switch (this.currentEventType) {
             case 'meal':
-                return await apiClient.updateMeal(this.currentEventId, formData);
+                // Handle single meal update (traditional editing)
+                if (this.currentEventId && !this.currentEventIds) {
+                    let mealData = formData;
+                    if (Array.isArray(formData)) {
+                        if (formData.length > 0) {
+                            mealData = formData[0];
+                        } else {
+                            throw new Error('No meal data to update');
+                        }
+                    }
+                    return await apiClient.updateMeal(this.currentEventId, mealData);
+                }
+                
+                // Handle multi-meal update (multiple meals in one cell)
+                if (this.currentEventIds && this.currentEventIds.length > 0) {
+                    const mealDataArray = Array.isArray(formData) ? formData : [formData];
+                    const updatePromises = [];
+                    
+                    for (let i = 0; i < this.currentEventIds.length; i++) {
+                        const mealId = this.currentEventIds[i];
+                        // Use the corresponding meal data or fall back to the first one
+                        const mealData = mealDataArray[i] || mealDataArray[0];
+                        
+                        updatePromises.push(
+                            apiClient.updateMeal(mealId, mealData)
+                                .catch(error => {
+                                    console.error(`Failed to update meal ${mealId}:`, error);
+                                    return { error: `Failed to update meal ${mealId}: ${error.message}` };
+                                })
+                        );
+                    }
+                    
+                    // Wait for all updates to complete
+                    const results = await Promise.all(updatePromises);
+                    
+                    // Check if any updates failed
+                    const failedUpdates = results.filter(result => result.error);
+                    if (failedUpdates.length > 0) {
+                        throw new Error(`Some meal updates failed: ${failedUpdates.map(f => f.error).join(', ')}`);
+                    }
+                    
+                    return {
+                        message: `Successfully updated ${this.currentEventIds.length} meals`,
+                        count: this.currentEventIds.length,
+                        results: results
+                    };
+                }
+                
+                throw new Error('No meal ID available for update');
+                
             case 'event':
                 return await apiClient.updateEvent(this.currentEventId, formData);
             case 'drink':
@@ -819,6 +914,7 @@ class DetailForms {
 
         this.modal.style.display = 'none';
         this.currentEventId = null;
+        this.currentEventIds = null;
         this.currentEventType = null;
         this.currentData = null;
     }
