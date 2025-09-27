@@ -3,6 +3,23 @@ import csv
 from typing import List, Tuple, Callable
 import re
 from dataclasses import dataclass
+import json
+
+with open('people_replacement.json', 'r') as f:
+    people_replacement = json.load(f)
+
+def replace_people(people: List[str]) -> List[str]:
+    rtn = []
+    for p in people:
+        if p in people_replacement:
+            rep = people_replacement[p]
+            if isinstance(rep, list):
+                rtn.extend(rep)
+            else:
+                rtn.append(rep)
+        else:
+            rtn.append(p)
+    return rtn
 
 
 @dataclass
@@ -57,6 +74,7 @@ def process_meal(s: str, date: str, time: str) -> List[Meal]:
     m, s = re_extract(r"w\/.*", s)
     if m:
         people = [p.strip() for p in re.split(r"[,，+]", m[0][2:].strip())]
+    people = replace_people(people)
     return [
         Meal(
             date=date,
@@ -134,7 +152,7 @@ def extract_meal(
                         extracted_idx.extend([(i, j) for j in indexes])
                     continue
                 for j, meal in enumerate(cell):
-                    if matcher(meal):
+                    if 'TBD' not in meal.people and matcher(meal):
                         meal.people += who
                         rtn.append(meal)
                         extracted_idx.append((i, j))
@@ -395,6 +413,7 @@ clear_names(
         "饼干",
         "月饼",
         "baton",
+        '天府',
     ],
     data,
     exact=False,
