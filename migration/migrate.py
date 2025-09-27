@@ -110,6 +110,7 @@ def extract_meal(
     exact: bool = True,
     dry_run: bool = False,
     matcher: Callable = None,
+    multi_matcher: Callable = None,
 ) -> List[Meal]:
     def match(meal: Meal) -> bool:
         if exact:
@@ -125,6 +126,13 @@ def extract_meal(
             extracted_idx = []
             for i, cell in enumerate(meals):
                 who = get_who(food_source, i, len(meals))
+                if multi_matcher:
+                    idxs = multi_matcher(cell)
+                    if idxs:
+                        cell[idxs[0]].people += who
+                        rtn.append(cell[idxs[0]])
+                        extracted_idx.extend([(i, j) for j in idxs])
+                    continue
                 for j, meal in enumerate(cell):
                     if matcher(meal):
                         meal.people += who
@@ -255,6 +263,7 @@ def insert_one_food(
     meal_type_override: str = None,
     comment_override: str = None,
     matcher: Callable = None,
+    multi_matcher: Callable = None,
 ):
     if not replace_name:
         replace_name = food_name
@@ -266,6 +275,7 @@ def insert_one_food(
             exact=exact,
             dry_run=True,
             matcher=matcher,
+            multi_matcher=multi_matcher,
         )
     )
     if not meals:
@@ -279,12 +289,39 @@ def insert_one_food(
         comment_override=comment_override,
     ):
         extract_meal(
-            food_name, days, food_source=food_source, exact=exact, matcher=matcher
+            food_name,
+            days,
+            food_source=food_source,
+            exact=exact,
+            matcher=matcher,
+            multi_matcher=multi_matcher,
         )
 
 
 conn = psycopg2.connect(dbname="xnote", user="postgres", host="localhost", port="5432")
 data = parse("old_data.csv")
+
+
+def multi_matcher_factory(keywords: List[str]) -> Callable:
+    def matcher(cell):
+        mnames = [m.name for m in cell]
+        idxs = [mnames.index(k) for k in keywords if k in mnames]
+        return idxs if len(idxs) == len(keywords) else []
+
+    return matcher
+
+
+multi_matchers = [
+    multi_matcher_factory(["bread", "jam"]),
+    multi_matcher_factory(["bread", "fried egg", "bacon"]),
+    multi_matcher_factory(["bread", "fried egg"]),
+    multi_matcher_factory(["bread", "cream cheese"]),
+    multi_matcher_factory(["葱油饼", "egg"]),
+    multi_matcher_factory(["葱油饼", "煎蛋"]),
+]
+for i, multi_matcher in enumerate(multi_matchers):
+    extract_meal(f"multi matcher {i}", data, multi_matcher=multi_matcher)
+
 clear_names(
     [
         "milk",
@@ -317,6 +354,24 @@ clear_names(
         "餐车卤肉饭",
         "chipotle",
         "速食螺蛳粉",
+        "banana",
+        "yogurt",
+        "banana bread",
+        "mango bread",
+        "coconut bread",
+        "bread n jam",
+        "bread",
+        "威化",
+        "biscuit",
+        "丹麦点心",
+        "藕粉",
+        "山楂锅盔",
+        "鸡蛋葱油饼",
+        "葱油饼",
+        "彩迪卷",
+        "cookie",
+        "蓝莓面包",
+        "scone",
     ],
     data,
 )
@@ -336,6 +391,10 @@ clear_names(
         "可乐鸡翅",
         "茄丁",
         "牛油果",
+        "汤圆",
+        "饼干",
+        "月饼",
+        "baton",
     ],
     data,
     exact=False,
