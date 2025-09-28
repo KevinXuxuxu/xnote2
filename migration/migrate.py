@@ -5,8 +5,9 @@ import re
 from dataclasses import dataclass
 import json
 
-with open('people_replacement.json', 'r') as f:
+with open("people_replacement.json", "r") as f:
     people_replacement = json.load(f)
+
 
 def replace_people(people: List[str]) -> List[str]:
     rtn = []
@@ -152,7 +153,7 @@ def extract_meal(
                         extracted_idx.extend([(i, j) for j in indexes])
                     continue
                 for j, meal in enumerate(cell):
-                    if 'TBD' not in meal.people and matcher(meal):
+                    if "TBD" not in meal.people and matcher(meal):
                         meal.people += who
                         rtn.append(meal)
                         extracted_idx.append((i, j))
@@ -390,6 +391,17 @@ clear_names(
         "cookie",
         "蓝莓面包",
         "scone",
+        "山头火",
+        "Ishian",
+        "Cinque Terre Ristorante",
+        "shinya shokudo",
+        "shakeshack",
+        "mamnoon",
+        "清汤牛腩面",
+        "豆角土豆炖排骨",
+        "土豆豆角炖排骨",
+        "酸菜粉条炖排骨",
+        "西红柿鸡蛋疙瘩汤",
     ],
     data,
 )
@@ -413,7 +425,12 @@ clear_names(
         "饼干",
         "月饼",
         "baton",
-        '天府',
+        "天府",
+        "Issian",
+        "Hosoonyi",
+        "Cactus",
+        "domino",
+        "KFC",
     ],
     data,
     exact=False,
