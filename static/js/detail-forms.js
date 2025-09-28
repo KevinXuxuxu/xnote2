@@ -464,9 +464,12 @@ class DetailForms {
             const formData = this.collectFormData();
             let newEventInfo = null;
 
-            if (this.currentEventId || (this.currentEventIds && this.currentEventIds.length > 0)) {
-                // Update existing event
+            if (this.currentEventId) {
+                // Update existing single event
                 await this.updateEvent(formData);
+            } else if (this.currentEventIds && this.currentEventIds.length > 0) {
+                // Multi-meal editing is disabled
+                throw new Error('Editing multiple meals in one cell is not supported. Please create individual meals separately.');
             } else {
                 // Create new event and track info for cell selection
                 const result = await this.createEvent(formData);
@@ -716,8 +719,8 @@ class DetailForms {
     async updateEvent(formData) {
         switch (this.currentEventType) {
             case 'meal':
-                // Handle single meal update (traditional editing)
-                if (this.currentEventId && !this.currentEventIds) {
+                // Handle single meal update only - multi-meal updating disabled
+                if (this.currentEventId) {
                     let mealData = formData;
                     if (Array.isArray(formData)) {
                         if (formData.length > 0) {
@@ -729,39 +732,9 @@ class DetailForms {
                     return await apiClient.updateMeal(this.currentEventId, mealData);
                 }
                 
-                // Handle multi-meal update (multiple meals in one cell)
+                // Multi-meal updating is disabled
                 if (this.currentEventIds && this.currentEventIds.length > 0) {
-                    const mealDataArray = Array.isArray(formData) ? formData : [formData];
-                    const updatePromises = [];
-                    
-                    for (let i = 0; i < this.currentEventIds.length; i++) {
-                        const mealId = this.currentEventIds[i];
-                        // Use the corresponding meal data or fall back to the first one
-                        const mealData = mealDataArray[i] || mealDataArray[0];
-                        
-                        updatePromises.push(
-                            apiClient.updateMeal(mealId, mealData)
-                                .catch(error => {
-                                    console.error(`Failed to update meal ${mealId}:`, error);
-                                    return { error: `Failed to update meal ${mealId}: ${error.message}` };
-                                })
-                        );
-                    }
-                    
-                    // Wait for all updates to complete
-                    const results = await Promise.all(updatePromises);
-                    
-                    // Check if any updates failed
-                    const failedUpdates = results.filter(result => result.error);
-                    if (failedUpdates.length > 0) {
-                        throw new Error(`Some meal updates failed: ${failedUpdates.map(f => f.error).join(', ')}`);
-                    }
-                    
-                    return {
-                        message: `Successfully updated ${this.currentEventIds.length} meals`,
-                        count: this.currentEventIds.length,
-                        results: results
-                    };
+                    throw new Error('Updating multiple meals in one cell is not supported. Please edit individual meals separately.');
                 }
                 
                 throw new Error('No meal ID available for update');

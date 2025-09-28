@@ -1220,28 +1220,25 @@ class EventSpreadsheet {
         if (rowData[mealTime] && rowData[mealTime][index]) {
             const meal = rowData[mealTime][index];
             
-            // For meals with multiple IDs, fetch details for each meal
-            if (meal.ids && meal.ids.length > 0) {
+            // Check if this cell has multiple meals
+            if (meal.ids && meal.ids.length > 1) {
+                // Multi-meal editing is disabled
+                alert('Editing multiple meals in one cell is not supported. Please create individual meals separately.');
+                return;
+            }
+            
+            // Only handle single meal editing
+            if (meal.ids && meal.ids.length === 1) {
                 try {
-                    // Fetch complete meal details for all meals in this cell
-                    const mealDetailsPromises = meal.ids.map(mealId => 
-                        apiClient.getMealDetails(mealId)
-                    );
-                    const allMealDetails = await Promise.all(mealDetailsPromises);
+                    // Fetch meal details for the single meal
+                    const mealDetails = await apiClient.getMealDetails(meal.ids[0]);
                     
                     if (window.detailForms) {
-                        // Create enhanced details with all meal information
-                        const enhancedDetails = {
-                            meals: allMealDetails, // Array of all meal details
-                            editingTime: mealTime,  // Add the meal time context
-                            isMultiMeal: meal.ids.length > 1 // Flag for multi-meal editing
-                        };
-                        
-                        // Store the enhanced details temporarily and open the form
-                        window.detailForms.currentData = enhancedDetails;
-                        window.detailForms.currentEventIds = meal.ids; // Store all meal IDs
+                        // Store the meal details and open the form
+                        window.detailForms.currentData = mealDetails;
+                        window.detailForms.currentEventId = meal.ids[0]; // Store single meal ID
                         window.detailForms.currentEventType = 'meal';
-                        window.detailForms.modalTitle.textContent = `Edit ${meal.ids.length} Meal${meal.ids.length > 1 ? 's' : ''}`;
+                        window.detailForms.modalTitle.textContent = 'Edit Meal';
                         window.detailForms.renderForm();
                         window.detailForms.modal.style.display = 'block';
                     }
