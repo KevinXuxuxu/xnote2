@@ -201,7 +201,7 @@ async fn update_meal(
     };
 
     // Step 1: Check if meal exists
-    let existing_meal = match sqlx::query_as::<_, Meal>(
+    let _existing_meal = match sqlx::query_as::<_, Meal>(
         "SELECT id, date, \"time\", notes FROM meal WHERE id = $1"
     )
     .bind(meal_id)

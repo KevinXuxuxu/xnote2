@@ -155,7 +155,7 @@ async fn update_event(
     };
 
     // Step 1: Check if event exists
-    let existing_event = match sqlx::query_as::<_, Event>(
+    let _existing_event = match sqlx::query_as::<_, Event>(
         "SELECT id, date, activity, measure, location, notes FROM event WHERE id = $1"
     )
     .bind(event_id)
