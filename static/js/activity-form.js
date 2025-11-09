@@ -12,6 +12,7 @@ class ActivityForm {
         this.closeBtn = document.querySelector('.close');
 
         this.activityTypeChoices = null;
+        this.currentActivityId = null;
 
         this.setupEventListeners();
         this.loadEnumData();
@@ -58,17 +59,38 @@ class ActivityForm {
     }
 
     openModal() {
+        this.currentActivityId = null;
         this.modalTitle.textContent = 'Add Activity';
+        this.saveAndAddBtn.textContent = 'Save and add another';
         this.renderForm();
         this.modal.style.display = 'block';
     }
 
-    renderForm() {
+    async openModalForEdit(activityId) {
+        try {
+            this.currentActivityId = activityId;
+            this.modalTitle.textContent = 'Edit Activity';
+            this.saveAndAddBtn.textContent = 'Save as new';
+            
+            // Load existing activity data
+            const activity = await apiClient.getActivity(activityId);
+            this.renderForm(activity);
+            this.modal.style.display = 'block';
+        } catch (error) {
+            console.error('Failed to load activity for editing:', error);
+            alert(`Failed to load activity for editing: ${error.message}`);
+        }
+    }
+
+    renderForm(activityData = null) {
+        const name = activityData?.name || '';
+        const type = activityData?.type || '';
+
         this.modalBody.innerHTML = `
             <form id="activityForm">
                 <div class="form-group">
                     <label for="activityName">Name <span style="color: red;">*</span></label>
-                    <input type="text" id="activityName" name="name" required placeholder="Enter activity name">
+                    <input type="text" id="activityName" name="name" required placeholder="Enter activity name" value="${name}">
                 </div>
                 
                 <div class="form-group">
@@ -76,7 +98,7 @@ class ActivityForm {
                     <select id="activityType" name="type" required>
                         <option value="">Select or enter activity type</option>
                         ${this.enumData.activityTypes.map(activityType =>
-            `<option value="${activityType.name}">${activityType.name}</option>`
+            `<option value="${activityType.name}" ${activityType.name === type ? 'selected' : ''}>${activityType.name}</option>`
         ).join('')}
                     </select>
                 </div>
@@ -86,8 +108,13 @@ class ActivityForm {
         // Initialize Choices.js for activity type selector
         this.initializeChoices();
 
-        // Focus on the name field
+        // Set the values for Choices.js after initialization
         setTimeout(() => {
+            if (this.activityTypeChoices && type) {
+                this.activityTypeChoices.setValue([type]);
+            }
+
+            // Focus on the name field
             document.getElementById('activityName').focus();
         }, 100);
     }
@@ -146,7 +173,7 @@ class ActivityForm {
         return errors;
     }
 
-    async saveActivity(addAnother = false) {
+    async saveActivity(saveAsNew = false) {
         try {
             const formData = this.collectFormData();
             const errors = this.validateForm(formData);
@@ -156,35 +183,49 @@ class ActivityForm {
                 return;
             }
 
-            // Check for potential duplicates
-            const existingActivities = await apiClient.getActivities();
-            const duplicates = window.duplicateUtils.findPotentialDuplicates(formData.name, existingActivities);
-            
-            if (duplicates.length > 0) {
-                const confirmed = window.duplicateUtils.showDuplicateConfirmation('Activity', formData.name, duplicates);
-                if (!confirmed) {
-                    return; // User cancelled the creation
-                }
-            }
+            const isEditing = this.currentActivityId !== null;
+            const shouldCreateNew = !isEditing || saveAsNew;
 
-            await apiClient.createActivity(formData);
+            if (shouldCreateNew) {
+                // Check for potential duplicates only when creating new activities
+                const existingActivities = await apiClient.getActivities();
+                const duplicates = window.duplicateUtils.findPotentialDuplicates(formData.name, existingActivities);
+                
+                if (duplicates.length > 0) {
+                    const confirmed = window.duplicateUtils.showDuplicateConfirmation('Activity', formData.name, duplicates);
+                    if (!confirmed) {
+                        return; // User cancelled the creation
+                    }
+                }
+
+                await apiClient.createActivity(formData);
+            } else {
+                // Update existing activity
+                await apiClient.updateActivity(this.currentActivityId, formData);
+            }
 
             // Refresh the activity spreadsheet
             if (window.activitySpreadsheet) {
                 window.activitySpreadsheet.refresh();
             }
 
-            if (addAnother) {
-                // Keep modal open and reset form
-                this.renderForm();
+            if (saveAsNew) {
+                // Save as new: keep modal open and reset form with current data
+                this.currentActivityId = null;
+                this.modalTitle.textContent = 'Add Activity';
+                this.saveAndAddBtn.textContent = 'Save and add another';
+                this.renderForm(formData); // Pre-fill with current data
+            } else if (isEditing) {
+                // Edit mode: close modal after update
+                this.closeModal();
             } else {
-                // Close modal
+                // New mode: close modal after creation
                 this.closeModal();
             }
 
         } catch (error) {
-            console.error('Failed to create activity:', error);
-            alert(`Failed to create activity: ${error.message}`);
+            console.error('Failed to save activity:', error);
+            alert(`Failed to save activity: ${error.message}`);
         }
     }
 
@@ -196,6 +237,7 @@ class ActivityForm {
         }
 
         this.modal.style.display = 'none';
+        this.currentActivityId = null;
     }
 }
 

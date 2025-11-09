@@ -42,6 +42,7 @@ class DrinkOptionForm {
     }
 
     renderForm() {
+
         this.modalBody.innerHTML = `
             <form id="drinkOptionForm">
                 <div class="form-group">

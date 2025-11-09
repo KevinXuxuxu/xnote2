@@ -11,6 +11,8 @@ class PeopleForm {
         this.cancelBtn = document.getElementById('cancelBtn');
         this.closeBtn = document.querySelector('.close');
 
+        this.currentPersonId = null;
+
         this.setupEventListeners();
     }
 
@@ -36,23 +38,44 @@ class PeopleForm {
     }
 
     openModal() {
+        this.currentPersonId = null;
         this.modalTitle.textContent = 'Add Person';
+        this.saveAndAddBtn.textContent = 'Save and add another';
         this.renderForm();
         this.modal.style.display = 'block';
     }
 
-    renderForm() {
+    async openModalForEdit(personId) {
+        try {
+            this.currentPersonId = personId;
+            this.modalTitle.textContent = 'Edit Person';
+            this.saveAndAddBtn.textContent = 'Save as new';
+            
+            // Load existing person data
+            const person = await apiClient.getPerson(personId);
+            this.renderForm(person);
+            this.modal.style.display = 'block';
+        } catch (error) {
+            console.error('Failed to load person for editing:', error);
+            alert(`Failed to load person for editing: ${error.message}`);
+        }
+    }
+
+    renderForm(personData = null) {
+        const name = personData?.name || '';
+        const notes = personData?.notes || '';
+
         this.modalBody.innerHTML = `
             <form id="personForm">
                 <div class="form-group">
                     <label for="personName">Name <span style="color: red;">*</span></label>
-                    <input type="text" id="personName" name="name" required placeholder="Enter person's name">
+                    <input type="text" id="personName" name="name" required placeholder="Enter person's name" value="${name}">
                 </div>
                 
                 <div class="form-group">
                     <label for="personNotes">Notes (Optional)</label>
                     <textarea id="personNotes" name="notes" rows="4" 
-                              placeholder="Any additional information about this person"></textarea>
+                              placeholder="Any additional information about this person">${notes}</textarea>
                 </div>
             </form>
         `;
@@ -90,7 +113,7 @@ class PeopleForm {
         return errors;
     }
 
-    async savePerson(addAnother = false) {
+    async savePerson(saveAsNew = false) {
         try {
             const formData = this.collectFormData();
             const errors = this.validateForm(formData);
@@ -100,40 +123,55 @@ class PeopleForm {
                 return;
             }
 
-            // Check for potential duplicates
-            const existingPeople = await apiClient.getPeople();
-            const duplicates = window.duplicateUtils.findPotentialDuplicates(formData.name, existingPeople);
-            
-            if (duplicates.length > 0) {
-                const confirmed = window.duplicateUtils.showDuplicateConfirmation('Person', formData.name, duplicates);
-                if (!confirmed) {
-                    return; // User cancelled the creation
-                }
-            }
+            const isEditing = this.currentPersonId !== null;
+            const shouldCreateNew = !isEditing || saveAsNew;
 
-            await apiClient.createPerson(formData);
+            if (shouldCreateNew) {
+                // Check for potential duplicates only when creating new people
+                const existingPeople = await apiClient.getPeople();
+                const duplicates = window.duplicateUtils.findPotentialDuplicates(formData.name, existingPeople);
+                
+                if (duplicates.length > 0) {
+                    const confirmed = window.duplicateUtils.showDuplicateConfirmation('Person', formData.name, duplicates);
+                    if (!confirmed) {
+                        return; // User cancelled the creation
+                    }
+                }
+
+                await apiClient.createPerson(formData);
+            } else {
+                // Update existing person
+                await apiClient.updatePerson(this.currentPersonId, formData);
+            }
 
             // Refresh the people spreadsheet
             if (window.peopleSpreadsheet) {
                 window.peopleSpreadsheet.refresh();
             }
 
-            if (addAnother) {
-                // Keep modal open and reset form
-                this.renderForm();
+            if (saveAsNew) {
+                // Save as new: keep modal open and reset form with current data
+                this.currentPersonId = null;
+                this.modalTitle.textContent = 'Add Person';
+                this.saveAndAddBtn.textContent = 'Save and add another';
+                this.renderForm(formData); // Pre-fill with current data
+            } else if (isEditing) {
+                // Edit mode: close modal after update
+                this.closeModal();
             } else {
-                // Close modal
+                // New mode: close modal after creation
                 this.closeModal();
             }
 
         } catch (error) {
-            console.error('Failed to create person:', error);
-            alert(`Failed to create person: ${error.message}`);
+            console.error('Failed to save person:', error);
+            alert(`Failed to save person: ${error.message}`);
         }
     }
 
     closeModal() {
         this.modal.style.display = 'none';
+        this.currentPersonId = null;
     }
 }
 

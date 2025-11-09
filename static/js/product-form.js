@@ -11,6 +11,7 @@ class ProductForm {
         this.cancelBtn = document.getElementById('cancelBtn');
         this.closeBtn = document.querySelector('.close');
 
+        this.currentProductId = null;
         this.setupEventListeners();
     }
 
@@ -36,17 +37,37 @@ class ProductForm {
     }
 
     openModal() {
+        this.currentProductId = null;
         this.modalTitle.textContent = 'Add Product';
+        this.saveAndAddBtn.textContent = 'Save and add another';
         this.renderForm();
         this.modal.style.display = 'block';
     }
 
-    renderForm() {
+    async openModalForEdit(productId) {
+        try {
+            this.currentProductId = productId;
+            this.modalTitle.textContent = 'Edit Product';
+            this.saveAndAddBtn.textContent = 'Save as new';
+            
+            // Load existing product data
+            const product = await apiClient.getProduct(productId);
+            this.renderForm(product);
+            this.modal.style.display = 'block';
+        } catch (error) {
+            console.error('Failed to load product for editing:', error);
+            alert(`Failed to load product for editing: ${error.message}`);
+        }
+    }
+
+    renderForm(productData = null) {
+        const name = productData?.name || '';
+
         this.modalBody.innerHTML = `
             <form id="productForm">
                 <div class="form-group">
                     <label for="productName">Name <span style="color: red;">*</span></label>
-                    <input type="text" id="productName" name="name" required placeholder="Enter product name">
+                    <input type="text" id="productName" name="name" required placeholder="Enter product name" value="${name}">
                 </div>
             </form>
         `;
@@ -79,7 +100,7 @@ class ProductForm {
         return errors;
     }
 
-    async saveProduct(addAnother = false) {
+    async saveProduct(saveAsNew = false) {
         try {
             const formData = this.collectFormData();
             const errors = this.validateForm(formData);
@@ -89,40 +110,55 @@ class ProductForm {
                 return;
             }
 
-            // Check for potential duplicates
-            const existingProducts = await apiClient.getProducts();
-            const duplicates = window.duplicateUtils.findPotentialDuplicates(formData.name, existingProducts);
-            
-            if (duplicates.length > 0) {
-                const confirmed = window.duplicateUtils.showDuplicateConfirmation('Product', formData.name, duplicates);
-                if (!confirmed) {
-                    return; // User cancelled the creation
-                }
-            }
+            const isEditing = this.currentProductId !== null;
+            const shouldCreateNew = !isEditing || saveAsNew;
 
-            await apiClient.createProduct(formData);
+            if (shouldCreateNew) {
+                // Check for potential duplicates only when creating new products
+                const existingProducts = await apiClient.getProducts();
+                const duplicates = window.duplicateUtils.findPotentialDuplicates(formData.name, existingProducts);
+                
+                if (duplicates.length > 0) {
+                    const confirmed = window.duplicateUtils.showDuplicateConfirmation('Product', formData.name, duplicates);
+                    if (!confirmed) {
+                        return; // User cancelled the creation
+                    }
+                }
+
+                await apiClient.createProduct(formData);
+            } else {
+                // Update existing product
+                await apiClient.updateProduct(this.currentProductId, formData);
+            }
 
             // Refresh the product spreadsheet
             if (window.productSpreadsheet) {
                 window.productSpreadsheet.refresh();
             }
 
-            if (addAnother) {
-                // Keep modal open and reset form
-                this.renderForm();
+            if (saveAsNew) {
+                // Save as new: keep modal open and reset form with current data
+                this.currentProductId = null;
+                this.modalTitle.textContent = 'Add Product';
+                this.saveAndAddBtn.textContent = 'Save and add another';
+                this.renderForm(formData); // Pre-fill with current data
+            } else if (isEditing) {
+                // Edit mode: close modal after update
+                this.closeModal();
             } else {
-                // Close modal
+                // New mode: close modal after creation
                 this.closeModal();
             }
 
         } catch (error) {
-            console.error('Failed to create product:', error);
-            alert(`Failed to create product: ${error.message}`);
+            console.error('Failed to save product:', error);
+            alert(`Failed to save product: ${error.message}`);
         }
     }
 
     closeModal() {
         this.modal.style.display = 'none';
+        this.currentProductId = null;
     }
 }
 

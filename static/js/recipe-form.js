@@ -11,6 +11,7 @@ class RecipeForm {
         this.cancelBtn = document.getElementById('cancelBtn');
         this.closeBtn = document.querySelector('.close');
 
+        this.currentRecipeId = null;
         this.setupEventListeners();
     }
 
@@ -36,35 +37,58 @@ class RecipeForm {
     }
 
     openModal() {
+        this.currentRecipeId = null;
         this.modalTitle.textContent = 'Add Recipe';
+        this.saveAndAddBtn.textContent = 'Save and add another';
         this.renderForm();
         this.modal.style.display = 'block';
     }
 
-    renderForm() {
+    async openModalForEdit(recipeId) {
+        try {
+            this.currentRecipeId = recipeId;
+            this.modalTitle.textContent = 'Edit Recipe';
+            this.saveAndAddBtn.textContent = 'Save as new';
+            
+            // Load existing recipe data
+            const recipe = await apiClient.getRecipe(recipeId);
+            this.renderForm(recipe);
+            this.modal.style.display = 'block';
+        } catch (error) {
+            console.error('Failed to load recipe for editing:', error);
+            alert(`Failed to load recipe for editing: ${error.message}`);
+        }
+    }
+
+    renderForm(recipeData = null) {
+        const name = recipeData?.name || '';
+        const ingredients = recipeData?.ingredients || '';
+        const procedure = recipeData?.procedure || '';
+        const cautions = recipeData?.cautions || '';
+
         this.modalBody.innerHTML = `
             <form id="recipeForm">
                 <div class="form-group">
                     <label for="recipeName">Name <span style="color: red;">*</span></label>
-                    <input type="text" id="recipeName" name="name" required placeholder="Enter recipe name">
+                    <input type="text" id="recipeName" name="name" required placeholder="Enter recipe name" value="${name}">
                 </div>
                 
                 <div class="form-group">
                     <label for="recipeIngredients">Ingredients <span style="color: red;">*</span></label>
                     <textarea id="recipeIngredients" name="ingredients" required rows="4" 
-                              placeholder="List ingredients (one per line or comma-separated)"></textarea>
+                              placeholder="List ingredients (one per line or comma-separated)">${ingredients}</textarea>
                 </div>
                 
                 <div class="form-group">
                     <label for="recipeProcedure">Procedure <span style="color: red;">*</span></label>
                     <textarea id="recipeProcedure" name="procedure" required rows="6" 
-                              placeholder="Describe cooking steps"></textarea>
+                              placeholder="Describe cooking steps">${procedure}</textarea>
                 </div>
                 
                 <div class="form-group">
                     <label for="recipeCautions">Cautions (Optional)</label>
                     <textarea id="recipeCautions" name="cautions" rows="3" 
-                              placeholder="Any warnings, allergies, or special notes"></textarea>
+                              placeholder="Any warnings, allergies, or special notes">${cautions}</textarea>
                 </div>
             </form>
         `;
@@ -108,7 +132,7 @@ class RecipeForm {
         return errors;
     }
 
-    async saveRecipe(addAnother = false) {
+    async saveRecipe(saveAsNew = false) {
         try {
             const formData = this.collectFormData();
             const errors = this.validateForm(formData);
@@ -118,40 +142,55 @@ class RecipeForm {
                 return;
             }
 
-            // Check for potential duplicates
-            const existingRecipes = await apiClient.getRecipes();
-            const duplicates = window.duplicateUtils.findPotentialDuplicates(formData.name, existingRecipes);
-            
-            if (duplicates.length > 0) {
-                const confirmed = window.duplicateUtils.showDuplicateConfirmation('Recipe', formData.name, duplicates);
-                if (!confirmed) {
-                    return; // User cancelled the creation
-                }
-            }
+            const isEditing = this.currentRecipeId !== null;
+            const shouldCreateNew = !isEditing || saveAsNew;
 
-            await apiClient.createRecipe(formData);
+            if (shouldCreateNew) {
+                // Check for potential duplicates only when creating new recipes
+                const existingRecipes = await apiClient.getRecipes();
+                const duplicates = window.duplicateUtils.findPotentialDuplicates(formData.name, existingRecipes);
+                
+                if (duplicates.length > 0) {
+                    const confirmed = window.duplicateUtils.showDuplicateConfirmation('Recipe', formData.name, duplicates);
+                    if (!confirmed) {
+                        return; // User cancelled the creation
+                    }
+                }
+
+                await apiClient.createRecipe(formData);
+            } else {
+                // Update existing recipe
+                await apiClient.updateRecipe(this.currentRecipeId, formData);
+            }
 
             // Refresh the recipe spreadsheet
             if (window.recipeSpreadsheet) {
                 window.recipeSpreadsheet.refresh();
             }
 
-            if (addAnother) {
-                // Keep modal open and reset form
-                this.renderForm();
+            if (saveAsNew) {
+                // Save as new: keep modal open and reset form with current data
+                this.currentRecipeId = null;
+                this.modalTitle.textContent = 'Add Recipe';
+                this.saveAndAddBtn.textContent = 'Save and add another';
+                this.renderForm(formData); // Pre-fill with current data
+            } else if (isEditing) {
+                // Edit mode: close modal after update
+                this.closeModal();
             } else {
-                // Close modal
+                // New mode: close modal after creation
                 this.closeModal();
             }
 
         } catch (error) {
-            console.error('Failed to create recipe:', error);
-            alert(`Failed to create recipe: ${error.message}`);
+            console.error('Failed to save recipe:', error);
+            alert(`Failed to save recipe: ${error.message}`);
         }
     }
 
     closeModal() {
         this.modal.style.display = 'none';
+        this.currentRecipeId = null;
     }
 }
 
