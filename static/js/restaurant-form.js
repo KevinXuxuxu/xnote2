@@ -13,6 +13,7 @@ class RestaurantForm {
 
         this.locationChoices = null;
         this.foodTypeChoices = null;
+        this.currentRestaurantId = null;
 
         this.setupEventListeners();
         this.loadEnumData();
@@ -67,25 +68,48 @@ class RestaurantForm {
     }
 
     openModal() {
+        this.currentRestaurantId = null;
         this.modalTitle.textContent = 'Add Restaurant';
+        this.saveAndAddBtn.textContent = 'Save and add another';
         this.renderForm();
         this.modal.style.display = 'block';
     }
 
-    renderForm() {
+    async openModalForEdit(restaurantId) {
+        try {
+            this.currentRestaurantId = restaurantId;
+            this.modalTitle.textContent = 'Edit Restaurant';
+            this.saveAndAddBtn.textContent = 'Save as new';
+            
+            // Load existing restaurant data
+            const restaurant = await apiClient.getRestaurant(restaurantId);
+            this.renderForm(restaurant);
+            this.modal.style.display = 'block';
+        } catch (error) {
+            console.error('Failed to load restaurant for editing:', error);
+            alert(`Failed to load restaurant for editing: ${error.message}`);
+        }
+    }
+
+    renderForm(restaurantData = null) {
+        const name = restaurantData?.name || '';
+        const location = restaurantData?.location || '';
+        const type = restaurantData?.type || '';
+        const price = restaurantData?.price || '';
+
         this.modalBody.innerHTML = `
             <form id="restaurantForm">
                 <div class="form-group">
                     <label for="restaurantName">Name <span style="color: red;">*</span></label>
-                    <input type="text" id="restaurantName" name="name" required placeholder="Enter restaurant name">
+                    <input type="text" id="restaurantName" name="name" required placeholder="Enter restaurant name" value="${name}">
                 </div>
                 
                 <div class="form-group">
                     <label for="restaurantLocation">Location</label>
                     <select id="restaurantLocation" name="location">
                         <option value="">Select or enter location</option>
-                        ${this.enumData.locations.map(location =>
-            `<option value="${location.name}">${location.name}</option>`
+                        ${this.enumData.locations.map(loc =>
+            `<option value="${loc.name}" ${loc.name === location ? 'selected' : ''}>${loc.name}</option>`
         ).join('')}
                     </select>
                 </div>
@@ -95,14 +119,14 @@ class RestaurantForm {
                     <select id="restaurantType" name="type" required>
                         <option value="">Select or enter food type</option>
                         ${this.enumData.foodTypes.map(foodType =>
-            `<option value="${foodType.name}">${foodType.name}</option>`
+            `<option value="${foodType.name}" ${foodType.name === type ? 'selected' : ''}>${foodType.name}</option>`
         ).join('')}
                     </select>
                 </div>
                 
                 <div class="form-group">
                     <label for="restaurantPrice">Price (Optional)</label>
-                    <input type="number" id="restaurantPrice" name="price" step="0.01" min="0" placeholder="Average price">
+                    <input type="number" id="restaurantPrice" name="price" step="0.01" min="0" placeholder="Average price" value="${price}">
                 </div>
             </form>
         `;
@@ -110,8 +134,16 @@ class RestaurantForm {
         // Initialize Choices.js for selectors
         this.initializeChoices();
 
-        // Focus on the name field
+        // Set the values for Choices.js after initialization
         setTimeout(() => {
+            if (this.locationChoices && location) {
+                this.locationChoices.setValue([location]);
+            }
+            if (this.foodTypeChoices && type) {
+                this.foodTypeChoices.setValue([type]);
+            }
+
+            // Focus on the name field
             document.getElementById('restaurantName').focus();
         }, 100);
     }
@@ -200,7 +232,7 @@ class RestaurantForm {
         return errors;
     }
 
-    async saveRestaurant(addAnother = false) {
+    async saveRestaurant(saveAsNew = false) {
         try {
             const formData = this.collectFormData();
             const errors = this.validateForm(formData);
@@ -210,35 +242,49 @@ class RestaurantForm {
                 return;
             }
 
-            // Check for potential duplicates
-            const existingRestaurants = await apiClient.getRestaurants();
-            const duplicates = window.duplicateUtils.findPotentialDuplicates(formData.name, existingRestaurants);
-            
-            if (duplicates.length > 0) {
-                const confirmed = window.duplicateUtils.showDuplicateConfirmation('Restaurant', formData.name, duplicates);
-                if (!confirmed) {
-                    return; // User cancelled the creation
-                }
-            }
+            const isEditing = this.currentRestaurantId !== null;
+            const shouldCreateNew = !isEditing || saveAsNew;
 
-            await apiClient.createRestaurant(formData);
+            if (shouldCreateNew) {
+                // Check for potential duplicates only when creating new restaurants
+                const existingRestaurants = await apiClient.getRestaurants();
+                const duplicates = window.duplicateUtils.findPotentialDuplicates(formData.name, existingRestaurants);
+                
+                if (duplicates.length > 0) {
+                    const confirmed = window.duplicateUtils.showDuplicateConfirmation('Restaurant', formData.name, duplicates);
+                    if (!confirmed) {
+                        return; // User cancelled the creation
+                    }
+                }
+
+                await apiClient.createRestaurant(formData);
+            } else {
+                // Update existing restaurant
+                await apiClient.updateRestaurant(this.currentRestaurantId, formData);
+            }
 
             // Refresh the restaurant spreadsheet
             if (window.restaurantSpreadsheet) {
                 window.restaurantSpreadsheet.refresh();
             }
 
-            if (addAnother) {
-                // Keep modal open and reset form
-                this.renderForm();
+            if (saveAsNew) {
+                // Save as new: keep modal open and reset form with current data
+                this.currentRestaurantId = null;
+                this.modalTitle.textContent = 'Add Restaurant';
+                this.saveAndAddBtn.textContent = 'Save and add another';
+                this.renderForm(formData); // Pre-fill with current data
+            } else if (isEditing) {
+                // Edit mode: close modal after update
+                this.closeModal();
             } else {
-                // Close modal
+                // New mode: close modal after creation
                 this.closeModal();
             }
 
         } catch (error) {
-            console.error('Failed to create restaurant:', error);
-            alert(`Failed to create restaurant: ${error.message}`);
+            console.error('Failed to save restaurant:', error);
+            alert(`Failed to save restaurant: ${error.message}`);
         }
     }
 
@@ -254,6 +300,7 @@ class RestaurantForm {
         }
 
         this.modal.style.display = 'none';
+        this.currentRestaurantId = null;
     }
 }
 

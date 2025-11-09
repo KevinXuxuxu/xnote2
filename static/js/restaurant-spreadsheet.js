@@ -8,6 +8,7 @@ class RestaurantSpreadsheet {
         this.data = [];
         this.filteredData = [];
         this.currentSearchText = '';
+        this.lastClickInfo = null;
 
         this.initializeSpreadsheet();
     }
@@ -81,7 +82,8 @@ class RestaurantSpreadsheet {
             },
             afterChange: this.onCellChange.bind(this),
             beforeRemoveRow: this.beforeRowRemove.bind(this),
-            afterRemoveRow: this.afterRowRemove.bind(this)
+            afterRemoveRow: this.afterRowRemove.bind(this),
+            afterOnCellMouseUp: this.onCellMouseUp.bind(this)
         };
 
         this.hotInstance = new Handsontable(container, config);
@@ -157,6 +159,52 @@ class RestaurantSpreadsheet {
         if (restaurant.description && restaurant.description.toLowerCase().includes(searchTerm)) return true;
         
         return false;
+    }
+
+    /**
+     * Handle mouse up events for double-click detection
+     */
+    onCellMouseUp(event, coords) {
+        if (!coords) return;
+
+        const row = coords.row;
+        const col = coords.col;
+        
+        // Check if this is a double-click
+        const now = Date.now();
+        if (this.lastClickInfo && 
+            this.lastClickInfo.row === row && 
+            this.lastClickInfo.col === col &&
+            (now - this.lastClickInfo.time) < 300) {
+            
+            // Double-click detected
+            this.handleCellDoubleClick(row, col);
+            this.lastClickInfo = null;
+        } else {
+            // Single-click - store for potential double-click
+            this.lastClickInfo = {
+                row: row,
+                col: col,
+                time: now
+            };
+        }
+    }
+
+    /**
+     * Handle double-click on a cell
+     */
+    handleCellDoubleClick(row, col) {
+        const rowData = this.hotInstance.getDataAtRow(row);
+        
+        if (rowData && rowData[0]) { // Check if restaurant has an ID
+            const restaurantId = rowData[0];
+            const restaurantName = rowData[1];
+            
+            // Open the restaurant form in edit mode
+            if (window.restaurantForm) {
+                window.restaurantForm.openModalForEdit(restaurantId);
+            }
+        }
     }
 
     /**
