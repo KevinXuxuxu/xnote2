@@ -102,23 +102,23 @@ class DetailForms {
                     date: useDate,
                     time: (eventInfo && eventInfo.time) || 'lunch',
                     notes: '',
-                    food_source: null,
-                    people: []
+                    food_source: eventInfo && eventInfo.foodSource ? { type: eventInfo.foodSource } : null,
+                    people: eventInfo && eventInfo.people ? this.getPeopleFromIds(eventInfo.people) : []
                 };
             case 'event':
                 return {
                     date: useDate,
-                    activity: null,
+                    activity: eventInfo && eventInfo.activity ? this.getActivityFromId(eventInfo.activity) : null,
                     measure: '',
                     location: '',
                     notes: '',
-                    people: []
+                    people: eventInfo && eventInfo.people ? this.getPeopleFromIds(eventInfo.people) : []
                 };
             case 'drink':
                 return {
                     date: useDate,
-                    name: '',
-                    people: []
+                    name: (eventInfo && eventInfo.drink) || '',
+                    people: eventInfo && eventInfo.people ? this.getPeopleFromIds(eventInfo.people) : []
                 };
             default:
                 return {};
@@ -126,6 +126,11 @@ class DetailForms {
     }
 
     renderForm() {
+        if (this.currentEventId) {
+            this.saveAndAddBtn.textContent = 'Duplicate';
+        } else {
+            this.saveAndAddBtn.textContent = 'Save and add another';
+        }
         switch (this.currentEventType) {
             case 'meal':
                 this.renderMealForm();
@@ -459,12 +464,12 @@ class DetailForms {
         ).join('');
     }
 
-    async saveChanges(addAnother = false) {
+    async saveChanges(saveAs = false) {
         try {
             const formData = this.collectFormData();
             let newEventInfo = null;
 
-            if (this.currentEventId) {
+            if (this.currentEventId && !saveAs) {
                 // Update existing single event
                 await this.updateEvent(formData);
             } else if (this.currentEventIds && this.currentEventIds.length > 0) {
@@ -509,9 +514,9 @@ class DetailForms {
                 }
             }
 
-            if (addAnother) {
-                // Keep modal open and reset to new form of same type
-                this.openDetails(null, this.currentEventType);
+            if (saveAs && this.currentEventId === null) {
+                // Keep modal open and reset to new form of same type with current data
+                this.openDetails(null, this.currentEventType, null, this.extractEventInfo(formData));
             } else {
                 // Close modal as usual
                 this.closeModal();
@@ -890,6 +895,44 @@ class DetailForms {
         this.currentEventIds = null;
         this.currentEventType = null;
         this.currentData = null;
+    }
+
+    extractEventInfo(formData) {
+        // Extract relevant information from form data to pre-fill the "Save as" form
+        if (this.currentEventType === 'meal') {
+            const mealData = Array.isArray(formData) ? formData[0] : formData;
+            return {
+                time: mealData.time,
+                foodSource: mealData.food_source?.type || 'recipe',
+                people: mealData.people_ids || []
+            };
+        } else if (this.currentEventType === 'event') {
+            return {
+                activity: formData.activity_id,
+                people: formData.people_ids || []
+            };
+        } else if (this.currentEventType === 'drink') {
+            const drinkData = Array.isArray(formData) ? formData[0] : formData;
+            return {
+                drink: drinkData.name,
+                people: drinkData.people_ids || []
+            };
+        }
+        return {};
+    }
+
+  getPeopleFromIds(peopleIds) {
+        if (!peopleIds || !Array.isArray(peopleIds) || peopleIds.length === 0) {
+            return [];
+        }
+        return peopleIds.map(id => this.enumData.people.find(p => p.id === id)).filter(Boolean);
+    }
+
+  getActivityFromId(activityId) {
+        if (!activityId) {
+            return null;
+        }
+        return this.enumData.activities.find(a => a.id === activityId);
     }
 
     capitalize(str) {
