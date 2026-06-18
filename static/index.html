@@ -13,6 +13,8 @@
     <!-- Choices.js CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js@11.2.3/public/assets/styles/choices.min.css">
 
+    <!-- FullCalendar injects its own styles from the JS bundle, so no CSS link needed -->
+
     <!-- Custom CSS -->
     <link rel="stylesheet" href="/static/css/main.css">
 
@@ -39,6 +41,9 @@
 
                 <!-- Toggle Button -->
                 <button id="toggleColumnsBtn" class="btn btn-toggle" title="Toggle meals/drinks columns"></button>
+
+                <!-- View Mode Toggle (Table / Calendar) -->
+                <button id="viewModeBtn" class="btn btn-viewmode" title="Switch to calendar view"></button>
 
                 <!-- Navigation Buttons -->
                 <div class="nav-buttons-desktop">
@@ -94,6 +99,11 @@
             <div id="spreadsheet-container">
                 <div id="main-spreadsheet"></div>
             </div>
+
+            <!-- Calendar View (FullCalendar) -->
+            <div class="calendar-container">
+                <div id="calendar"></div>
+            </div>
         </main>
 
         <!-- Detail Modal -->
@@ -124,6 +134,9 @@
     <!-- Handsontable JS -->
     <script src="https://cdn.jsdelivr.net/npm/handsontable@16.0.0/dist/handsontable.full.min.js"></script>
 
+    <!-- FullCalendar JS (bundle: core + dayGrid + interaction) -->
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.21/index.global.min.js"></script>
+
     <!-- Choices.js JS -->
     <script src="https://cdn.jsdelivr.net/npm/choices.js@11.2.3/public/assets/scripts/choices.min.js"></script>
 
@@ -131,6 +144,7 @@
     <script src="/static/js/utils.js"></script>
     <script src="/static/js/api-client.js"></script>
     <script src="/static/js/spreadsheet.js"></script>
+    <script src="/static/js/calendar.js"></script>
     <script src="/static/js/detail-forms.js"></script>
     <script src="/static/js/main.js"></script>
 </body>

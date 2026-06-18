@@ -4,6 +4,8 @@
 document.addEventListener('DOMContentLoaded', function () {
     // Initialize components
     window.eventSpreadsheet = new EventSpreadsheet('main-spreadsheet');
+    // Calendar view (FullCalendar instance is created lazily on first show)
+    window.calendarView = new CalendarView('calendar');
 
     // Setup control button handlers
     setupControlButtons();
@@ -61,6 +63,26 @@ function setupControlButtons() {
     document.getElementById('toggleColumnsBtn').onclick = () => {
         window.eventSpreadsheet.toggleMealsAndDrinksColumns();
     };
+
+    // View mode toggle (Table / Calendar)
+    const viewModeBtn = document.getElementById('viewModeBtn');
+    const dailyViewEl = document.querySelector('.daily-view');
+    if (viewModeBtn && dailyViewEl) {
+        viewModeBtn.onclick = () => {
+            const showCalendar = !dailyViewEl.classList.contains('view-calendar');
+            dailyViewEl.classList.toggle('view-calendar', showCalendar);
+            viewModeBtn.title = showCalendar ? 'Switch to table view' : 'Switch to calendar view';
+
+            if (showCalendar && window.calendarView) {
+                // Container must be visible before init so FullCalendar sizes correctly.
+                window.calendarView.init();
+                window.calendarView.update(window.eventSpreadsheet.filteredData);
+                if (window.calendarView.cal) {
+                    window.calendarView.cal.updateSize();
+                }
+            }
+        };
+    }
 
     // Clear search button
     document.getElementById('clearSearchBtn').onclick = () => {

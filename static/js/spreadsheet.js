@@ -547,6 +547,11 @@ class EventSpreadsheet {
 
         this.hotInstance.loadData(this.filteredData);
 
+        // Keep the calendar view in sync with the same filtered data set.
+        if (window.calendarView) {
+            window.calendarView.update(this.filteredData);
+        }
+
         // Reapply column hiding if columns were previously hidden
         if (this.mealsAndDrinksHidden) {
             // Add small delay to ensure Handsontable is fully rendered
@@ -1219,34 +1224,40 @@ class EventSpreadsheet {
 
         if (rowData[mealTime] && rowData[mealTime][index]) {
             const meal = rowData[mealTime][index];
-            
+
             // Check if this cell has multiple meals
             if (meal.ids && meal.ids.length > 1) {
                 // Multi-meal editing is disabled
                 alert('Editing multiple meals in one cell is not supported. Please create individual meals separately.');
                 return;
             }
-            
+
             // Only handle single meal editing
             if (meal.ids && meal.ids.length === 1) {
-                try {
-                    // Fetch meal details for the single meal
-                    const mealDetails = await apiClient.getMealDetails(meal.ids[0]);
-                    
-                    if (window.detailForms) {
-                        // Store the meal details and open the form
-                        window.detailForms.currentData = mealDetails;
-                        window.detailForms.currentEventId = meal.ids[0]; // Store single meal ID
-                        window.detailForms.currentEventType = 'meal';
-                        window.detailForms.modalTitle.textContent = 'Edit Meal';
-                        window.detailForms.renderForm();
-                        window.detailForms.modal.style.display = 'block';
-                    }
-                } catch (error) {
-                    console.error('Failed to fetch meal details for editing:', error);
-                    alert('Failed to load meal details for editing. Please try again.');
-                }
+                await this.editMealById(meal.ids[0]);
             }
+        }
+    }
+
+    /**
+     * Fetch a single meal's details and open the edit form. Reused by both the
+     * table (cell double-click) and the calendar (event click).
+     */
+    async editMealById(id) {
+        try {
+            const mealDetails = await apiClient.getMealDetails(id);
+
+            if (window.detailForms) {
+                window.detailForms.currentData = mealDetails;
+                window.detailForms.currentEventId = id;
+                window.detailForms.currentEventType = 'meal';
+                window.detailForms.modalTitle.textContent = 'Edit Meal';
+                window.detailForms.renderForm();
+                window.detailForms.modal.style.display = 'block';
+            }
+        } catch (error) {
+            console.error('Failed to fetch meal details for editing:', error);
+            alert('Failed to load meal details for editing. Please try again.');
         }
     }
 
@@ -1277,24 +1288,32 @@ class EventSpreadsheet {
         if (rowData.events && rowData.events[index]) {
             const event = rowData.events[index];
             if (event.id) {
-                try {
-                    // Fetch complete event details for editing
-                    const eventDetails = await apiClient.getEventDetails(event.id, 'event');
-                    
-                    if (window.detailForms) {
-                        // Store the enhanced details temporarily and open the form
-                        window.detailForms.currentData = eventDetails;
-                        window.detailForms.currentEventId = event.id;
-                        window.detailForms.currentEventType = 'event';
-                        window.detailForms.modalTitle.textContent = `Edit Event`;
-                        window.detailForms.renderForm();
-                        window.detailForms.modal.style.display = 'block';
-                    }
-                } catch (error) {
-                    console.error('Failed to fetch event details for editing:', error);
-                    alert('Failed to load event details for editing. Please try again.');
-                }
+                await this.editEventById(event.id);
             }
+        }
+    }
+
+    /**
+     * Fetch a single event's details and open the edit form. Reused by both the
+     * table (cell double-click) and the calendar (event click).
+     */
+    async editEventById(id) {
+        try {
+            // Fetch complete event details for editing
+            const eventDetails = await apiClient.getEventDetails(id, 'event');
+
+            if (window.detailForms) {
+                // Store the enhanced details temporarily and open the form
+                window.detailForms.currentData = eventDetails;
+                window.detailForms.currentEventId = id;
+                window.detailForms.currentEventType = 'event';
+                window.detailForms.modalTitle.textContent = 'Edit Event';
+                window.detailForms.renderForm();
+                window.detailForms.modal.style.display = 'block';
+            }
+        } catch (error) {
+            console.error('Failed to fetch event details for editing:', error);
+            alert('Failed to load event details for editing. Please try again.');
         }
     }
 

@@ -876,3 +876,60 @@ table.htCore thead tr th,
 input {
     font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
 }
+
+/* ===== Calendar view (FullCalendar) ===== */
+
+/* Hidden by default; shown when .view-calendar is toggled on .daily-view */
+.calendar-container {
+    display: none;
+}
+
+.daily-view.view-calendar #spreadsheet-container {
+    display: none;
+}
+
+.daily-view.view-calendar .calendar-container {
+    display: block;
+}
+
+/* View-mode toggle button (matches the icon button style of .btn-toggle) */
+.btn-viewmode {
+    background-color: #6c757d;
+    color: white;
+    padding: 0.5rem;
+    min-width: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-viewmode:hover {
+    background-color: #545b62;
+}
+
+.btn-viewmode::before {
+    content: "🗓";
+    font-size: 1rem;
+}
+
+/* Active state highlights the button while in calendar view (icon stays 🗓) */
+.daily-view.view-calendar .btn-viewmode {
+    background-color: #007bff;
+}
+
+/* Make FullCalendar chips readable on the pastel backgrounds we set per event */
+#calendar .fc-event {
+    font-size: 0.78rem;
+    line-height: 1.1;
+    padding: 1px 3px;
+    border-radius: 3px;
+    cursor: pointer;
+}
+
+#calendar .fc-daygrid-day-frame {
+    min-height: 90px;
+}
+
+#calendar .fc-day-today {
+    background-color: #c8e6c9 !important;
+}
