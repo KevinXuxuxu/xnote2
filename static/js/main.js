@@ -107,10 +107,14 @@ function setupControlButtons() {
             dailyViewEl.classList.toggle('view-calendar', showCalendar);
             viewModeBtn.title = showCalendar ? 'Switch to table view' : 'Switch to calendar view';
 
+            // The date range only drives the table; the calendar loads per visible
+            // month, so disable the date inputs while the calendar is showing.
+            setDateFilterEnabled(!showCalendar);
+
             if (showCalendar && window.calendarView) {
                 // Container must be visible before init so FullCalendar sizes correctly.
                 window.calendarView.init();
-                window.calendarView.update(window.eventSpreadsheet.filteredData);
+                window.calendarView.update();
                 if (window.calendarView.cal) {
                     window.calendarView.cal.updateSize();
                 }
@@ -166,6 +170,21 @@ function setupControlButtons() {
             }
         });
     }
+}
+
+/**
+ * Enable/disable the date-range inputs. They drive the table only; the calendar
+ * view loads its own per-month data and ignores them, so they are disabled and
+ * dimmed while the calendar is showing.
+ */
+function setDateFilterEnabled(enabled) {
+    ['startDate', 'endDate'].forEach((id) => {
+        const input = document.getElementById(id);
+        if (!input) return;
+        input.disabled = !enabled;
+        const group = input.closest('.filter-group');
+        if (group) group.classList.toggle('filter-disabled', !enabled);
+    });
 }
 
 function setupFilters() {

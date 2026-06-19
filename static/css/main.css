@@ -168,6 +168,11 @@ body {
     white-space: nowrap;
 }
 
+/* Date range applies to the table only; dimmed while the calendar view is active. */
+.filter-group.filter-disabled {
+    opacity: 0.5;
+}
+
 .form-control {
     padding: 0.5rem;
     border: 1px solid #ced4da;

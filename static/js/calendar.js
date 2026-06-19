@@ -11,14 +11,20 @@ class CalendarView {
     constructor(containerId) {
         this.containerId = containerId;
         this.cal = null;
-        this.data = [];
+        this.monthData = [];        // raw (merged) summaries for the visible range
+        this.data = [];             // monthData after keyword/activity-type filters
         this.initialized = false;
-        this.lastRangeKey = null;   // last seen "startDate|endDate", to detect range changes
+        this._loadSeq = 0;          // guards against out-of-order range loads
     }
 
     /**
      * Lazily create the FullCalendar instance. Must be called only while the
      * container is visible so sizing is correct.
+     *
+     * Unlike the table, the calendar ignores the date-range filter: it loads
+     * data for whatever range is currently visible (see onDatesSet) so the user
+     * can scroll month-to-month seamlessly. It opens on the table's end date for
+     * continuity, falling back to today.
      */
     init() {
         if (this.initialized) return;
@@ -26,8 +32,12 @@ class CalendarView {
         const el = document.getElementById(this.containerId);
         if (!el || typeof FullCalendar === 'undefined') return;
 
+        const f = (window.eventSpreadsheet && window.eventSpreadsheet.currentFilters) || {};
+        const initialDate = f.endDate || (window.dateUtils && window.dateUtils.getTodayLocal());
+
         this.cal = new FullCalendar.Calendar(el, {
             initialView: 'dayGridMonth',
+            initialDate: initialDate,
             height: window.innerHeight - 210,
             headerToolbar: { left: 'prev,next today', center: 'title', right: '' },
             dayMaxEvents: true,           // collapse crowded days into "+N more"
@@ -37,66 +47,94 @@ class CalendarView {
             titleFormat: { year: 'numeric', month: 'long' },
             dateClick: (info) => this.onDateClick(info),
             eventClick: (info) => this.onEventClick(info),
+            // Fires on first render and on every prev/next/today navigation.
+            datesSet: (info) => this.onDatesSet(info),
         });
 
         this.cal.render();
         this.initialized = true;
-
-        // Populate with whatever data was already collected before init().
-        if (this.data.length) {
-            this.cal.addEventSource(this.buildEvents(this.data));
-        }
-
-        // Open on the latest month that has data within the active range.
-        this.navigateToLastMonth();
     }
 
     /**
-     * Store the latest filtered data and, if the calendar is mounted, refresh
-     * its events. Safe to call before init() (data is buffered for later).
-     *
-     * The visible month is re-targeted only when the date RANGE changes (not on
-     * keyword-search keystrokes), so manual browsing stays put while typing.
+     * Re-apply the keyword / activity-type filters to the current month's data
+     * and refresh the rendered chips. The date-range filter is intentionally
+     * ignored here. No-op until the calendar is mounted.
      */
-    update(filteredData) {
-        this.data = filteredData || [];
-
-        const rangeKey = this.currentRangeKey();
-        const rangeChanged = rangeKey !== this.lastRangeKey;
-        this.lastRangeKey = rangeKey;
-
+    update() {
         if (!this.cal) return;
+        this.render();
+    }
 
+    /**
+     * Refetch the currently visible range from the API. Used when the underlying
+     * data may have changed (edits/saves/refresh). No-op until mounted.
+     */
+    refresh() {
+        if (!this.cal) return;
+        const view = this.cal.view;
+        const start = this.cal.formatIso(view.activeStart, true);
+        const end = this.cal.formatIso(view.activeEnd, true);
+        this.loadRange(start, end);
+    }
+
+    /**
+     * Load the daily summaries for the visible date range, then render. Called by
+     * FullCalendar whenever the visible month changes, so scrolling fetches fresh
+     * data instead of leaving empty pages outside the table's date range.
+     */
+    onDatesSet(info) {
+        // info.startStr/endStr cover the full visible grid (incl. adjacent-month
+        // days). endStr is exclusive; the API tolerates the extra trailing day.
+        const start = (info.startStr || '').slice(0, 10);
+        const end = (info.endStr || '').slice(0, 10);
+        if (start && end) this.loadRange(start, end);
+    }
+
+    /**
+     * Fetch summaries for [start, end], merge meals like the table does, and
+     * render. A sequence guard discards responses from superseded loads.
+     */
+    async loadRange(start, end) {
+        const seq = ++this._loadSeq;
+        try {
+            const summaries = await apiClient.getDailySummary(start, end);
+            if (seq !== this._loadSeq) return;   // a newer load started; discard
+
+            const es = window.eventSpreadsheet;
+            this.monthData = (es && es.postProcessMealMerging)
+                ? es.postProcessMealMerging(summaries || [])
+                : (summaries || []);
+            this.render();
+        } catch (err) {
+            console.error('Calendar failed to load range', start, end, err);
+        }
+    }
+
+    /**
+     * Filter the loaded month data by the active keyword / activity-type filters
+     * (reusing the table's predicates) and rebuild the calendar event source.
+     */
+    render() {
+        if (!this.cal) return;
+        this.data = this.filterDays(this.monthData || []);
         this.cal.getEventSources().forEach((s) => s.remove());
         this.cal.addEventSource(this.buildEvents(this.data));
-
-        if (rangeChanged) {
-            this.navigateToLastMonth();
-        }
-    }
-
-    /** Stable key for the active date-range filter. */
-    currentRangeKey() {
-        const f = (window.eventSpreadsheet && window.eventSpreadsheet.currentFilters) || {};
-        return `${f.startDate || ''}|${f.endDate || ''}`;
     }
 
     /**
-     * Jump to the latest month that has data within the active range. Falls back
-     * to the range's end date, then today.
+     * Keep only days that have a hit for the active keyword + activity-type
+     * filters, mirroring EventSpreadsheet.applyFilters' row-level filtering.
      */
-    navigateToLastMonth() {
-        let target = '';
-        for (const d of this.data) {
-            if (d && d.date && d.date > target) target = d.date;   // ISO dates sort lexically
-        }
-        if (!target) {
-            const f = (window.eventSpreadsheet && window.eventSpreadsheet.currentFilters) || {};
-            target = f.endDate || (window.dateUtils && window.dateUtils.getTodayLocal());
-        }
-        if (target) {
-            this.cal.gotoDate(target);
-        }
+    filterDays(days) {
+        const es = window.eventSpreadsheet;
+        const term = this.getSearchTerm();
+        const activityType = this.getActivityType();
+        return days.filter((day) => {
+            if (!day || !day.date) return false;
+            if (term && es && !es.rowMatchesSearch(day, term)) return false;
+            if (activityType && es && !es.rowMatchesActivityType(day, activityType)) return false;
+            return true;
+        });
     }
 
     /** Current keyword-search term (lowercased, trimmed), or '' when none. */

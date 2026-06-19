@@ -402,6 +402,13 @@ class EventSpreadsheet {
             this.data = this.postProcessMealMerging(dailySummaries);
             this.applyFilters();
 
+            // The calendar loads its own per-month data; refetch its visible range
+            // so edits/saves and refreshes are reflected there too (no-op if the
+            // calendar has never been opened).
+            if (window.calendarView) {
+                window.calendarView.refresh();
+            }
+
             this.showLoading(false);
         } catch (error) {
             console.error('Failed to load data:', error);
@@ -554,9 +561,11 @@ class EventSpreadsheet {
 
         this.hotInstance.loadData(this.filteredData);
 
-        // Keep the calendar view in sync with the same filtered data set.
+        // Keep the calendar view's keyword/activity-type filtering in sync. The
+        // calendar loads its own per-month data (ignoring the date range), so it
+        // only needs a nudge to re-apply filters, not the table's data set.
         if (window.calendarView) {
-            window.calendarView.update(this.filteredData);
+            window.calendarView.update();
         }
 
         // Reapply column hiding if columns were previously hidden
