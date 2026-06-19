@@ -38,7 +38,7 @@ class CalendarView {
         this.cal = new FullCalendar.Calendar(el, {
             initialView: 'dayGridMonth',
             initialDate: initialDate,
-            height: window.innerHeight - 210,
+            height: this.computeHeight(),
             headerToolbar: { left: 'prev,next today', center: 'title', right: '' },
             dayMaxEvents: true,           // collapse crowded days into "+N more"
             displayEventEnd: false,
@@ -53,6 +53,27 @@ class CalendarView {
 
         this.cal.render();
         this.initialized = true;
+
+        // Keep the calendar fitted to the viewport as it resizes / rotates so the
+        // whole month stays visible without page scrolling (matters on mobile,
+        // where the stacked filter panel changes how much height is available).
+        window.addEventListener('resize', () => this.applyHeight());
+    }
+
+    /**
+     * Available height from the calendar's top edge to the bottom of the viewport,
+     * measured live so it accounts for the filter panel's current height.
+     */
+    computeHeight() {
+        const el = document.getElementById(this.containerId);
+        const top = el ? el.getBoundingClientRect().top : 150;
+        return Math.max(300, Math.floor(window.innerHeight - top - 8));
+    }
+
+    /** Re-fit the calendar to the current viewport. No-op until mounted. */
+    applyHeight() {
+        if (!this.cal) return;
+        this.cal.setOption('height', this.computeHeight());
     }
 
     /**

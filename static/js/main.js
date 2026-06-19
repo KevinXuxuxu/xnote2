@@ -115,6 +115,9 @@ function setupControlButtons() {
                 // Container must be visible before init so FullCalendar sizes correctly.
                 window.calendarView.init();
                 window.calendarView.update();
+                // Re-fit after the layout reflows (e.g. the date inputs hide on
+                // mobile in calendar view, freeing up vertical space).
+                window.calendarView.applyHeight();
                 if (window.calendarView.cal) {
                     window.calendarView.cal.updateSize();
                 }
