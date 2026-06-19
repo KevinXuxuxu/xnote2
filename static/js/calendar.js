@@ -105,6 +105,12 @@ class CalendarView {
         return (f.searchText || '').toLowerCase().trim();
     }
 
+    /** Current activity-type filter (lowercased, trimmed), or '' when none. */
+    getActivityType() {
+        const f = (window.eventSpreadsheet && window.eventSpreadsheet.currentFilters) || {};
+        return (f.activityType || '').toLowerCase().trim();
+    }
+
     textMatches(text, term) {
         return !term || (!!text && text.toLowerCase().includes(term));
     }
@@ -132,6 +138,7 @@ class CalendarView {
      */
     buildDayEvents(day, term) {
         const date = day.date;
+        const activityType = this.getActivityType();
 
         // Gather items with a per-item match flag.
         const meals = [];
@@ -149,6 +156,7 @@ class CalendarView {
         const activities = (day.events || []).map((ev) => ({
             ev,
             match: this.textMatches(ev.text, term),
+            typeMatch: !activityType || (ev.type || '').toLowerCase() === activityType,
         }));
 
         const anyItemMatch = !term
@@ -160,26 +168,31 @@ class CalendarView {
 
         const out = [];
 
-        for (const m of meals) {
-            if (!filterItems || m.match) {
-                out.push(this.mealEvent(date, m.mealTime, m.meal));
+        // When an activity-type filter is active, only the matching activity
+        // events are shown; meals and drinks have no activity type and are hidden.
+        if (!activityType) {
+            for (const m of meals) {
+                if (!filterItems || m.match) {
+                    out.push(this.mealEvent(date, m.mealTime, m.meal));
+                }
+            }
+
+            const drinkNames = (filterItems ? drinks.filter((d) => d.match) : drinks).map((d) => d.d);
+            if (drinkNames.length) {
+                out.push({
+                    title: drinkNames.join(', '),
+                    start: date,
+                    allDay: true,
+                    backgroundColor: CalendarView.DRINK_COLOR,
+                    borderColor: CalendarView.DRINK_COLOR,
+                    textColor: CalendarView.TEXT_COLOR,
+                    extendedProps: { kind: 'drink' },
+                });
             }
         }
 
-        const drinkNames = (filterItems ? drinks.filter((d) => d.match) : drinks).map((d) => d.d);
-        if (drinkNames.length) {
-            out.push({
-                title: drinkNames.join(', '),
-                start: date,
-                allDay: true,
-                backgroundColor: CalendarView.DRINK_COLOR,
-                borderColor: CalendarView.DRINK_COLOR,
-                textColor: CalendarView.TEXT_COLOR,
-                extendedProps: { kind: 'drink' },
-            });
-        }
-
         for (const a of activities) {
+            if (!a.typeMatch) continue;
             if (!filterItems || a.match) {
                 out.push(this.activityEvent(date, a.ev));
             }

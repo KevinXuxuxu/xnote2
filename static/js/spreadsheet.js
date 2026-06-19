@@ -13,7 +13,8 @@ class EventSpreadsheet {
         this.currentFilters = {
             startDate: urlParams.get('startDate') || null,
             endDate: urlParams.get('endDate') || null,
-            searchText: urlParams.get('searchText') || ''
+            searchText: urlParams.get('searchText') || '',
+            activityType: urlParams.get('activityType') || ''
         };
 
         // Track column visibility state
@@ -545,6 +546,12 @@ class EventSpreadsheet {
             this.filteredData = this.filteredData.filter(row => this.rowMatchesSearch(row, searchTerm));
         }
 
+        // Keep a day-row only if it has an event of the selected activity type.
+        if (this.currentFilters.activityType && this.currentFilters.activityType.trim()) {
+            const activityType = this.currentFilters.activityType.trim();
+            this.filteredData = this.filteredData.filter(row => this.rowMatchesActivityType(row, activityType));
+        }
+
         this.hotInstance.loadData(this.filteredData);
 
         // Keep the calendar view in sync with the same filtered data set.
@@ -594,6 +601,15 @@ class EventSpreadsheet {
         }
 
         return false;
+    }
+
+    /**
+     * Check if a row has at least one event matching the given activity type
+     */
+    rowMatchesActivityType(row, activityType) {
+        if (!row.events || !Array.isArray(row.events)) return false;
+        const target = activityType.toLowerCase();
+        return row.events.some(ev => ev && ev.type && ev.type.toLowerCase() === target);
     }
 
     /**
@@ -994,7 +1010,8 @@ class EventSpreadsheet {
         this.currentFilters = {
             startDate: this.getDefaultStartDate(),
             endDate: this.getDefaultEndDate(),
-            searchText: this.currentFilters.searchText || ''
+            searchText: this.currentFilters.searchText || '',
+            activityType: this.currentFilters.activityType || ''
         };
 
         // Update the date input fields in the UI

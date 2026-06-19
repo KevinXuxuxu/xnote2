@@ -16,7 +16,8 @@
       "Read(//tmp/**)",
       "Bash(curl -s -o /dev/null -w \"%{http_code}\" \"https://cdn.jsdelivr.net/npm/fullcalendar@6.1.21/index.global.min.css\")",
       "Bash(node --check static/js/main.js)",
-      "Bash(node --check static/js/calendar.js)"
+      "Bash(node --check static/js/calendar.js)",
+      "Bash(grep -iE '\\\\.\\(tsx|ts|jsx|js|vue|svelte|html|css\\)$')"
     ],
     "deny": []
   }

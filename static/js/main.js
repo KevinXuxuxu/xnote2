@@ -16,6 +16,9 @@ document.addEventListener('DOMContentLoaded', function () {
     // Initialize date filters from URL or defaults
     initializeDateFilters();
 
+    // Populate the activity-type filter dropdown from the API
+    populateActivityTypeFilter();
+
     // Handle browser back/forward buttons
     window.addEventListener('popstate', function (event) {
         // Sync form inputs with URL parameters
@@ -29,16 +32,47 @@ document.addEventListener('DOMContentLoaded', function () {
         if (urlParams.searchText) {
             document.getElementById('searchText').value = urlParams.searchText;
         }
+        const activityTypeSelect = document.getElementById('activityTypeFilter');
+        if (activityTypeSelect) {
+            activityTypeSelect.value = urlParams.activityType || '';
+        }
 
         // Apply the filters from URL
         const filters = {
             startDate: urlParams.startDate || window.dateUtils.getDaysAgoLocal(30),
             endDate: urlParams.endDate || window.dateUtils.getTodayLocal(),
-            searchText: urlParams.searchText || ''
+            searchText: urlParams.searchText || '',
+            activityType: urlParams.activityType || ''
         };
         window.eventSpreadsheet.setFilters(filters);
     });
 });
+
+/**
+ * Load the available activity types and populate the filter dropdown,
+ * preserving any value already set from the URL.
+ */
+async function populateActivityTypeFilter() {
+    const select = document.getElementById('activityTypeFilter');
+    if (!select) return;
+
+    try {
+        const activityTypes = await apiClient.getActivityTypes();
+        const current = getUrlFilters().activityType || '';
+
+        for (const activityType of (activityTypes || [])) {
+            const option = document.createElement('option');
+            option.value = activityType.name;
+            option.textContent = activityType.name;
+            select.appendChild(option);
+        }
+
+        // Restore selection from URL after options are populated.
+        select.value = current;
+    } catch (err) {
+        console.warn('Failed to load activity types for filter:', err);
+    }
+}
 
 function setupControlButtons() {
     // Add event buttons
@@ -139,18 +173,36 @@ function setupFilters() {
         const startDate = document.getElementById('startDate').value;
         const endDate = document.getElementById('endDate').value;
         const searchText = document.getElementById('searchText').value;
+        const activityType = document.getElementById('activityTypeFilter').value;
 
         // Update URL with new filter parameters
-        updateUrlFilters(startDate, endDate, searchText);
+        updateUrlFilters(startDate, endDate, searchText, true, activityType);
 
         const filters = {
             startDate: startDate,
             endDate: endDate,
-            searchText: searchText
+            searchText: searchText,
+            activityType: activityType
         };
 
         window.eventSpreadsheet.setFilters(filters);
     };
+
+    // Apply the activity-type filter immediately on change (client-side only).
+    const activityTypeSelect = document.getElementById('activityTypeFilter');
+    if (activityTypeSelect) {
+        activityTypeSelect.addEventListener('change', () => {
+            const activityType = activityTypeSelect.value;
+            updateUrlFilters(
+                document.getElementById('startDate').value,
+                document.getElementById('endDate').value,
+                document.getElementById('searchText').value,
+                true,
+                activityType
+            );
+            window.eventSpreadsheet.setFilters({ activityType });
+        });
+    }
 
     // Add real-time search filtering with debounce
     const searchInput = document.getElementById('searchText');
@@ -217,11 +269,14 @@ function getUrlFilters() {
     return {
         startDate: urlParams.get('startDate'),
         endDate: urlParams.get('endDate'),
-        searchText: urlParams.get('searchText')
+        searchText: urlParams.get('searchText'),
+        activityType: urlParams.get('activityType')
     };
 }
 
-function updateUrlFilters(startDate, endDate, searchText, pushState = true) {
+// `activityType` is optional: when omitted (undefined) the existing URL value is
+// left untouched, so callers that don't manage it won't clobber the selection.
+function updateUrlFilters(startDate, endDate, searchText, pushState = true, activityType = undefined) {
     const url = new URL(window.location);
 
     if (startDate) {
@@ -240,6 +295,14 @@ function updateUrlFilters(startDate, endDate, searchText, pushState = true) {
         url.searchParams.set('searchText', searchText.trim());
     } else {
         url.searchParams.delete('searchText');
+    }
+
+    if (activityType !== undefined) {
+        if (activityType && activityType.trim()) {
+            url.searchParams.set('activityType', activityType.trim());
+        } else {
+            url.searchParams.delete('activityType');
+        }
     }
 
     if (pushState) {
