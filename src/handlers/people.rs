@@ -110,13 +110,9 @@ async fn update_person(
             .await
         }
         (Some(name), None) => {
-            sqlx::query!(
-                "UPDATE people SET name = $1 WHERE id = $2",
-                name,
-                person_id
-            )
-            .execute(pool.get_ref())
-            .await
+            sqlx::query!("UPDATE people SET name = $1 WHERE id = $2", name, person_id)
+                .execute(pool.get_ref())
+                .await
         }
         (None, Some(notes)) => {
             sqlx::query!(

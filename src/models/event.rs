@@ -27,9 +27,3 @@ pub struct CreateEventResponse {
     pub id: i32,
     pub message: String,
 }
-
-#[derive(Debug, Serialize, Deserialize, FromRow)]
-pub struct EventPeople {
-    pub event: i32,
-    pub people: i32,
-}

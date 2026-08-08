@@ -26,9 +26,3 @@ pub struct CreateDrinkResponse {
     pub id: i32,
     pub message: String,
 }
-
-#[derive(Debug, Serialize, Deserialize, FromRow)]
-pub struct DrinkPeople {
-    pub drink: i32,
-    pub people: i32,
-}

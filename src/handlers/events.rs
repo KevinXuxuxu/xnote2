@@ -142,7 +142,7 @@ async fn update_event(
     event_data: web::Json<CreateEvent>,
 ) -> Result<HttpResponse> {
     let event_id = path.into_inner();
-    
+
     // Start transaction
     let mut tx = match pool.begin().await {
         Ok(tx) => tx,
@@ -156,7 +156,7 @@ async fn update_event(
 
     // Step 1: Check if event exists
     let _existing_event = match sqlx::query_as::<_, Event>(
-        "SELECT id, date, activity, measure, location, notes FROM event WHERE id = $1"
+        "SELECT id, date, activity, measure, location, notes FROM event WHERE id = $1",
     )
     .bind(event_id)
     .fetch_optional(&mut *tx)

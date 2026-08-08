@@ -188,7 +188,7 @@ async fn update_meal(
     meal_data: web::Json<CreateMeal>,
 ) -> Result<HttpResponse> {
     let meal_id = path.into_inner();
-    
+
     // Start transaction
     let mut tx = match pool.begin().await {
         Ok(tx) => tx,
@@ -201,26 +201,25 @@ async fn update_meal(
     };
 
     // Step 1: Check if meal exists
-    let _existing_meal = match sqlx::query_as::<_, Meal>(
-        "SELECT id, date, \"time\", notes FROM meal WHERE id = $1"
-    )
-    .bind(meal_id)
-    .fetch_optional(&mut *tx)
-    .await
-    {
-        Ok(Some(meal)) => meal,
-        Ok(None) => {
-            return Ok(HttpResponse::NotFound().json(serde_json::json!({
-                "error": "Meal not found"
-            })));
-        }
-        Err(e) => {
-            log::error!("Failed to fetch meal: {}", e);
-            return Ok(HttpResponse::InternalServerError().json(serde_json::json!({
-                "error": "Failed to update meal"
-            })));
-        }
-    };
+    let _existing_meal =
+        match sqlx::query_as::<_, Meal>("SELECT id, date, \"time\", notes FROM meal WHERE id = $1")
+            .bind(meal_id)
+            .fetch_optional(&mut *tx)
+            .await
+        {
+            Ok(Some(meal)) => meal,
+            Ok(None) => {
+                return Ok(HttpResponse::NotFound().json(serde_json::json!({
+                    "error": "Meal not found"
+                })));
+            }
+            Err(e) => {
+                log::error!("Failed to fetch meal: {}", e);
+                return Ok(HttpResponse::InternalServerError().json(serde_json::json!({
+                    "error": "Failed to update meal"
+                })));
+            }
+        };
 
     // Step 2: Update the main meal record
     if let Err(e) = sqlx::query!(
