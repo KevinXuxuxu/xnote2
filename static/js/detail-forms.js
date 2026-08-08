@@ -8,6 +8,8 @@ class DetailForms {
         this.modalBody = document.getElementById('modalBody');
         this.saveBtn = document.getElementById('saveBtn');
         this.saveAndAddBtn = document.getElementById('saveAndAddBtn');
+        this.duplicateTodayBtn = document.getElementById('duplicateTodayBtn');
+        this.duplicateYesterdayBtn = document.getElementById('duplicateYesterdayBtn');
         this.cancelBtn = document.getElementById('cancelBtn');
         this.closeBtn = document.querySelector('.close');
 
@@ -28,6 +30,12 @@ class DetailForms {
         this.cancelBtn.onclick = () => this.closeModal();
         this.saveBtn.onclick = () => this.saveChanges(false);
         this.saveAndAddBtn.onclick = () => this.saveChanges(true);
+        if (this.duplicateTodayBtn) {
+            this.duplicateTodayBtn.onclick = () => this.duplicateWithDate(window.dateUtils.getTodayLocal());
+        }
+        if (this.duplicateYesterdayBtn) {
+            this.duplicateYesterdayBtn.onclick = () => this.duplicateWithDate(window.dateUtils.getDaysAgoLocal(1));
+        }
 
         // Close modal when clicking outside
         window.onclick = (event) => {
@@ -128,8 +136,13 @@ class DetailForms {
     renderForm() {
         if (this.currentEventId) {
             this.saveAndAddBtn.textContent = 'Duplicate';
+            // Duplicate-to-date buttons only make sense when editing an existing item
+            if (this.duplicateTodayBtn) this.duplicateTodayBtn.style.display = '';
+            if (this.duplicateYesterdayBtn) this.duplicateYesterdayBtn.style.display = '';
         } else {
             this.saveAndAddBtn.textContent = 'Save and add another';
+            if (this.duplicateTodayBtn) this.duplicateTodayBtn.style.display = 'none';
+            if (this.duplicateYesterdayBtn) this.duplicateYesterdayBtn.style.display = 'none';
         }
         switch (this.currentEventType) {
             case 'meal':
@@ -525,6 +538,61 @@ class DetailForms {
         } catch (error) {
             console.error('Failed to save changes:', error);
             alert(`Failed to save changes: ${error.message}`);
+        }
+    }
+
+    /**
+     * Create a duplicate of the current item with the date set to a specific
+     * value (e.g. today or yesterday), skipping the manual date selection step.
+     * @param {string} targetDate - Target date as YYYY-MM-DD
+     */
+    async duplicateWithDate(targetDate) {
+        try {
+            const formData = this.collectFormData();
+
+            // Override the date on all duplicated items (meals/drinks come back as arrays)
+            if (Array.isArray(formData)) {
+                formData.forEach(item => { item.date = targetDate; });
+            } else {
+                formData.date = targetDate;
+            }
+
+            const result = await this.createEvent(formData);
+
+            // Track new event info for cell selection (same as saveChanges)
+            let newEventInfo = null;
+            if (window.eventSpreadsheet) {
+                if (this.currentEventType === 'meal') {
+                    const first = Array.isArray(formData) ? formData[0] : formData;
+                    newEventInfo = {
+                        type: 'meal',
+                        date: first.date,
+                        time: first.time,
+                        result: result
+                    };
+                } else if (this.currentEventType === 'event') {
+                    newEventInfo = {
+                        type: 'event',
+                        date: formData.date,
+                        result: result
+                    };
+                } else if (this.currentEventType === 'drink') {
+                    const first = Array.isArray(formData) ? formData[0] : formData;
+                    newEventInfo = {
+                        type: 'drink',
+                        date: first.date,
+                        result: result
+                    };
+                }
+            }
+
+            if (window.eventSpreadsheet) {
+                await window.eventSpreadsheet.refreshAndSelectNewCell(newEventInfo);
+            }
+            this.closeModal();
+        } catch (error) {
+            console.error('Failed to duplicate:', error);
+            alert(`Failed to duplicate: ${error.message}`);
         }
     }
 
