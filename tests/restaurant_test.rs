@@ -9,14 +9,15 @@ mod tests {
         pool: PgPool,
         restaurant1_id: i32,
         restaurant2_id: i32,
-        restaurant3_id: i32,
+        _restaurant3_id: i32,
     }
 
     async fn create_test_database_pool() -> PgPool {
         dotenv::dotenv().ok();
         let database_url = std::env::var("DATABASE_URL")
-            .expect("DATABASE_URL must be set")
-            .replace("/xnote", "/xnote_test");
+            .expect("DATABASE_URL must be set");
+        let last_slash = database_url.rfind('/').expect("DATABASE_URL must be a valid connection string");
+        let database_url = format!("{}/xnote_test", &database_url[..last_slash]);
         PgPool::connect(&database_url)
             .await
             .expect("Failed to connect to test database")
@@ -65,6 +66,8 @@ mod tests {
 
     async fn setup_test_context() -> TestContext {
         let pool = create_test_database_pool().await;
+        // Drop leftover state from previous runs; init.sql inserts are not idempotent
+        cleanup_database(&pool).await;
         create_schema(&pool).await;
 
         // Insert restaurants
@@ -96,7 +99,7 @@ mod tests {
             pool,
             restaurant1_id,
             restaurant2_id,
-            restaurant3_id,
+            _restaurant3_id: restaurant3_id,
         }
     }
 
@@ -128,9 +131,9 @@ mod tests {
 
         assert_eq!(restaurants.len(), 3);
 
-        // Check restaurants are ordered by name
-        assert_eq!(restaurants[0].name, "Burger Joint");
-        assert_eq!(restaurants[1].name, "Pasta Palace");
+        // Check restaurants are ordered by id (insertion order)
+        assert_eq!(restaurants[0].name, "Pasta Palace");
+        assert_eq!(restaurants[1].name, "Burger Joint");
         assert_eq!(restaurants[2].name, "Taco Truck");
 
         teardown_test_context(ctx).await;
@@ -229,7 +232,7 @@ mod tests {
 
     #[actix_web::test]
     #[serial]
-    async fn test_create_restaurant_placeholder() {
+    async fn test_create_restaurant() {
         let ctx = setup_test_context().await;
 
         let app = test::init_service(
@@ -239,22 +242,33 @@ mod tests {
         )
         .await;
 
-        let req = test::TestRequest::post().uri("/restaurants").to_request();
+        let req = test::TestRequest::post()
+            .uri("/restaurants")
+            .set_json(&serde_json::json!({
+                "name": "Sushi Bar",
+                "location": "Seattle Downtown",
+                "type": "japanese",
+                "price": 45.0
+            }))
+            .to_request();
 
         let resp = test::call_service(&app, req).await;
         assert_eq!(resp.status(), 201);
 
         let body = test::read_body(resp).await;
-        let response: serde_json::Value =
-            serde_json::from_slice(&body).expect("Failed to deserialize response");
-        assert_eq!(response["message"], "Create restaurant - TODO: implement");
+        let restaurant: xnote::models::restaurant::Restaurant =
+            serde_json::from_slice(&body).expect("Failed to deserialize restaurant");
+        assert_eq!(restaurant.name, "Sushi Bar");
+        assert_eq!(restaurant.location, "Seattle Downtown");
+        assert_eq!(restaurant.food_type, "japanese");
+        assert_eq!(restaurant.price, Some(45.0));
 
         teardown_test_context(ctx).await;
     }
 
     #[actix_web::test]
     #[serial]
-    async fn test_update_restaurant_placeholder() {
+    async fn test_update_restaurant() {
         let ctx = setup_test_context().await;
 
         let app = test::init_service(
@@ -266,22 +280,27 @@ mod tests {
 
         let req = test::TestRequest::put()
             .uri(&format!("/restaurants/{}", ctx.restaurant1_id))
+            .set_json(&serde_json::json!({
+                "price": 30.0
+            }))
             .to_request();
 
         let resp = test::call_service(&app, req).await;
-        assert!(resp.status().is_success());
+        assert_eq!(resp.status(), 200);
 
         let body = test::read_body(resp).await;
-        let response: serde_json::Value =
-            serde_json::from_slice(&body).expect("Failed to deserialize response");
-        assert_eq!(response["message"], "Update restaurant - TODO: implement");
+        let restaurant: xnote::models::restaurant::Restaurant =
+            serde_json::from_slice(&body).expect("Failed to deserialize restaurant");
+        assert_eq!(restaurant.id, ctx.restaurant1_id);
+        assert_eq!(restaurant.name, "Pasta Palace");
+        assert_eq!(restaurant.price, Some(30.0));
 
         teardown_test_context(ctx).await;
     }
 
     #[actix_web::test]
     #[serial]
-    async fn test_delete_restaurant_placeholder() {
+    async fn test_delete_restaurant() {
         let ctx = setup_test_context().await;
 
         let app = test::init_service(
@@ -296,12 +315,12 @@ mod tests {
             .to_request();
 
         let resp = test::call_service(&app, req).await;
-        assert!(resp.status().is_success());
+        assert_eq!(resp.status(), 200);
 
         let body = test::read_body(resp).await;
         let response: serde_json::Value =
             serde_json::from_slice(&body).expect("Failed to deserialize response");
-        assert_eq!(response["message"], "Delete restaurant - TODO: implement");
+        assert_eq!(response["message"], "Restaurant deleted successfully");
 
         teardown_test_context(ctx).await;
     }

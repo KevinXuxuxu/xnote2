@@ -9,14 +9,15 @@ mod tests {
         pool: PgPool,
         person1_id: i32,
         person2_id: i32,
-        person3_id: i32,
+        _person3_id: i32,
     }
 
     async fn create_test_database_pool() -> PgPool {
         dotenv::dotenv().ok();
         let database_url = std::env::var("DATABASE_URL")
-            .expect("DATABASE_URL must be set")
-            .replace("/xnote", "/xnote_test");
+            .expect("DATABASE_URL must be set");
+        let last_slash = database_url.rfind('/').expect("DATABASE_URL must be a valid connection string");
+        let database_url = format!("{}/xnote_test", &database_url[..last_slash]);
         PgPool::connect(&database_url)
             .await
             .expect("Failed to connect to test database")
@@ -65,6 +66,8 @@ mod tests {
 
     async fn setup_test_context() -> TestContext {
         let pool = create_test_database_pool().await;
+        // Drop leftover state from previous runs; init.sql inserts are not idempotent
+        cleanup_database(&pool).await;
         create_schema(&pool).await;
 
         // Insert people
@@ -99,7 +102,7 @@ mod tests {
             pool,
             person1_id,
             person2_id,
-            person3_id,
+            _person3_id: person3_id,
         }
     }
 
@@ -131,7 +134,7 @@ mod tests {
 
         assert_eq!(people.len(), 3);
 
-        // Check people are ordered by name
+        // Check people are ordered by id (insertion order)
         assert_eq!(people[0].name, "Alice");
         assert_eq!(people[1].name, "Bob");
         assert_eq!(people[2].name, "Charlie");
@@ -226,7 +229,7 @@ mod tests {
 
     #[actix_web::test]
     #[serial]
-    async fn test_create_person_placeholder() {
+    async fn test_create_person() {
         let ctx = setup_test_context().await;
 
         let app = test::init_service(
@@ -236,7 +239,13 @@ mod tests {
         )
         .await;
 
-        let req = test::TestRequest::post().uri("/people").to_request();
+        let req = test::TestRequest::post()
+            .uri("/people")
+            .set_json(&serde_json::json!({
+                "name": "Dana",
+                "notes": "Test person 4"
+            }))
+            .to_request();
 
         let resp = test::call_service(&app, req).await;
         assert_eq!(resp.status(), 201);
@@ -244,14 +253,15 @@ mod tests {
         let body = test::read_body(resp).await;
         let response: serde_json::Value =
             serde_json::from_slice(&body).expect("Failed to deserialize response");
-        assert_eq!(response["message"], "Create person - TODO: implement");
+        assert_eq!(response["message"], "Person created successfully");
+        assert!(response["id"].is_i64());
 
         teardown_test_context(ctx).await;
     }
 
     #[actix_web::test]
     #[serial]
-    async fn test_update_person_placeholder() {
+    async fn test_update_person() {
         let ctx = setup_test_context().await;
 
         let app = test::init_service(
@@ -263,22 +273,25 @@ mod tests {
 
         let req = test::TestRequest::put()
             .uri(&format!("/people/{}", ctx.person1_id))
+            .set_json(&serde_json::json!({
+                "name": "Alicia"
+            }))
             .to_request();
 
         let resp = test::call_service(&app, req).await;
-        assert!(resp.status().is_success());
+        assert_eq!(resp.status(), 200);
 
         let body = test::read_body(resp).await;
         let response: serde_json::Value =
             serde_json::from_slice(&body).expect("Failed to deserialize response");
-        assert_eq!(response["message"], "Update person - TODO: implement");
+        assert_eq!(response["message"], "Person updated successfully");
 
         teardown_test_context(ctx).await;
     }
 
     #[actix_web::test]
     #[serial]
-    async fn test_delete_person_placeholder() {
+    async fn test_delete_person() {
         let ctx = setup_test_context().await;
 
         let app = test::init_service(
@@ -293,12 +306,12 @@ mod tests {
             .to_request();
 
         let resp = test::call_service(&app, req).await;
-        assert!(resp.status().is_success());
+        assert_eq!(resp.status(), 200);
 
         let body = test::read_body(resp).await;
         let response: serde_json::Value =
             serde_json::from_slice(&body).expect("Failed to deserialize response");
-        assert_eq!(response["message"], "Delete person - TODO: implement");
+        assert_eq!(response["message"], "Person deleted successfully");
 
         teardown_test_context(ctx).await;
     }

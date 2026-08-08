@@ -9,14 +9,15 @@ mod tests {
         pool: PgPool,
         product1_id: i32,
         product2_id: i32,
-        product3_id: i32,
+        _product3_id: i32,
     }
 
     async fn create_test_database_pool() -> PgPool {
         dotenv::dotenv().ok();
         let database_url = std::env::var("DATABASE_URL")
-            .expect("DATABASE_URL must be set")
-            .replace("/xnote", "/xnote_test");
+            .expect("DATABASE_URL must be set");
+        let last_slash = database_url.rfind('/').expect("DATABASE_URL must be a valid connection string");
+        let database_url = format!("{}/xnote_test", &database_url[..last_slash]);
         PgPool::connect(&database_url)
             .await
             .expect("Failed to connect to test database")
@@ -65,6 +66,8 @@ mod tests {
 
     async fn setup_test_context() -> TestContext {
         let pool = create_test_database_pool().await;
+        // Drop leftover state from previous runs; init.sql inserts are not idempotent
+        cleanup_database(&pool).await;
         create_schema(&pool).await;
 
         // Insert products
@@ -96,7 +99,7 @@ mod tests {
             pool,
             product1_id,
             product2_id,
-            product3_id,
+            _product3_id: product3_id,
         }
     }
 
@@ -128,7 +131,7 @@ mod tests {
 
         assert_eq!(products.len(), 3);
 
-        // Check products are ordered by name
+        // Check products are ordered by id (insertion order)
         assert_eq!(products[0].name, "Apple");
         assert_eq!(products[1].name, "Banana");
         assert_eq!(products[2].name, "Orange");
@@ -221,7 +224,7 @@ mod tests {
 
     #[actix_web::test]
     #[serial]
-    async fn test_create_product_placeholder() {
+    async fn test_create_product() {
         let ctx = setup_test_context().await;
 
         let app = test::init_service(
@@ -231,22 +234,27 @@ mod tests {
         )
         .await;
 
-        let req = test::TestRequest::post().uri("/products").to_request();
+        let req = test::TestRequest::post()
+            .uri("/products")
+            .set_json(&serde_json::json!({
+                "name": "Grapes"
+            }))
+            .to_request();
 
         let resp = test::call_service(&app, req).await;
         assert_eq!(resp.status(), 201);
 
         let body = test::read_body(resp).await;
-        let response: serde_json::Value =
-            serde_json::from_slice(&body).expect("Failed to deserialize response");
-        assert_eq!(response["message"], "Create product - TODO: implement");
+        let product: xnote::models::product::Product =
+            serde_json::from_slice(&body).expect("Failed to deserialize product");
+        assert_eq!(product.name, "Grapes");
 
         teardown_test_context(ctx).await;
     }
 
     #[actix_web::test]
     #[serial]
-    async fn test_update_product_placeholder() {
+    async fn test_update_product() {
         let ctx = setup_test_context().await;
 
         let app = test::init_service(
@@ -258,22 +266,26 @@ mod tests {
 
         let req = test::TestRequest::put()
             .uri(&format!("/products/{}", ctx.product1_id))
+            .set_json(&serde_json::json!({
+                "name": "Apple Updated"
+            }))
             .to_request();
 
         let resp = test::call_service(&app, req).await;
-        assert!(resp.status().is_success());
+        assert_eq!(resp.status(), 200);
 
         let body = test::read_body(resp).await;
-        let response: serde_json::Value =
-            serde_json::from_slice(&body).expect("Failed to deserialize response");
-        assert_eq!(response["message"], "Update product - TODO: implement");
+        let product: xnote::models::product::Product =
+            serde_json::from_slice(&body).expect("Failed to deserialize product");
+        assert_eq!(product.id, ctx.product1_id);
+        assert_eq!(product.name, "Apple Updated");
 
         teardown_test_context(ctx).await;
     }
 
     #[actix_web::test]
     #[serial]
-    async fn test_delete_product_placeholder() {
+    async fn test_delete_product() {
         let ctx = setup_test_context().await;
 
         let app = test::init_service(
@@ -288,12 +300,12 @@ mod tests {
             .to_request();
 
         let resp = test::call_service(&app, req).await;
-        assert!(resp.status().is_success());
+        assert_eq!(resp.status(), 200);
 
         let body = test::read_body(resp).await;
         let response: serde_json::Value =
             serde_json::from_slice(&body).expect("Failed to deserialize response");
-        assert_eq!(response["message"], "Delete product - TODO: implement");
+        assert_eq!(response["message"], "Product deleted successfully");
 
         teardown_test_context(ctx).await;
     }

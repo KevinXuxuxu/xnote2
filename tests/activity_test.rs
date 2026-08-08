@@ -9,14 +9,15 @@ mod tests {
         pool: PgPool,
         activity1_id: i32,
         activity2_id: i32,
-        activity3_id: i32,
+        _activity3_id: i32,
     }
 
     async fn create_test_database_pool() -> PgPool {
         dotenv::dotenv().ok();
         let database_url = std::env::var("DATABASE_URL")
-            .expect("DATABASE_URL must be set")
-            .replace("/xnote", "/xnote_test");
+            .expect("DATABASE_URL must be set");
+        let last_slash = database_url.rfind('/').expect("DATABASE_URL must be a valid connection string");
+        let database_url = format!("{}/xnote_test", &database_url[..last_slash]);
         PgPool::connect(&database_url)
             .await
             .expect("Failed to connect to test database")
@@ -65,6 +66,8 @@ mod tests {
 
     async fn setup_test_context() -> TestContext {
         let pool = create_test_database_pool().await;
+        // Drop leftover state from previous runs; init.sql inserts are not idempotent
+        cleanup_database(&pool).await;
         create_schema(&pool).await;
 
         // Insert activities
@@ -99,7 +102,7 @@ mod tests {
             pool,
             activity1_id,
             activity2_id,
-            activity3_id,
+            _activity3_id: activity3_id,
         }
     }
 
@@ -131,10 +134,10 @@ mod tests {
 
         assert_eq!(activities.len(), 3);
 
-        // Check activities are ordered by name
-        assert_eq!(activities[0].name, "Cleaning");
+        // Check activities are ordered by id (insertion order)
+        assert_eq!(activities[0].name, "Running");
         assert_eq!(activities[1].name, "Coding");
-        assert_eq!(activities[2].name, "Running");
+        assert_eq!(activities[2].name, "Cleaning");
 
         teardown_test_context(ctx).await;
     }
@@ -228,7 +231,7 @@ mod tests {
 
     #[actix_web::test]
     #[serial]
-    async fn test_create_activity_placeholder() {
+    async fn test_create_activity() {
         let ctx = setup_test_context().await;
 
         let app = test::init_service(
@@ -238,22 +241,29 @@ mod tests {
         )
         .await;
 
-        let req = test::TestRequest::post().uri("/activities").to_request();
+        let req = test::TestRequest::post()
+            .uri("/activities")
+            .set_json(&serde_json::json!({
+                "name": "Swimming",
+                "type": "sport"
+            }))
+            .to_request();
 
         let resp = test::call_service(&app, req).await;
         assert_eq!(resp.status(), 201);
 
         let body = test::read_body(resp).await;
-        let response: serde_json::Value =
-            serde_json::from_slice(&body).expect("Failed to deserialize response");
-        assert_eq!(response["message"], "Create activity - TODO: implement");
+        let activity: xnote::models::activity::Activity =
+            serde_json::from_slice(&body).expect("Failed to deserialize activity");
+        assert_eq!(activity.name, "Swimming");
+        assert_eq!(activity.activity_type, "sport");
 
         teardown_test_context(ctx).await;
     }
 
     #[actix_web::test]
     #[serial]
-    async fn test_update_activity_placeholder() {
+    async fn test_update_activity() {
         let ctx = setup_test_context().await;
 
         let app = test::init_service(
@@ -265,22 +275,27 @@ mod tests {
 
         let req = test::TestRequest::put()
             .uri(&format!("/activities/{}", ctx.activity1_id))
+            .set_json(&serde_json::json!({
+                "name": "Running Fast"
+            }))
             .to_request();
 
         let resp = test::call_service(&app, req).await;
-        assert!(resp.status().is_success());
+        assert_eq!(resp.status(), 200);
 
         let body = test::read_body(resp).await;
-        let response: serde_json::Value =
-            serde_json::from_slice(&body).expect("Failed to deserialize response");
-        assert_eq!(response["message"], "Update activity - TODO: implement");
+        let activity: xnote::models::activity::Activity =
+            serde_json::from_slice(&body).expect("Failed to deserialize activity");
+        assert_eq!(activity.id, ctx.activity1_id);
+        assert_eq!(activity.name, "Running Fast");
+        assert_eq!(activity.activity_type, "sport");
 
         teardown_test_context(ctx).await;
     }
 
     #[actix_web::test]
     #[serial]
-    async fn test_delete_activity_placeholder() {
+    async fn test_delete_activity() {
         let ctx = setup_test_context().await;
 
         let app = test::init_service(
@@ -295,12 +310,12 @@ mod tests {
             .to_request();
 
         let resp = test::call_service(&app, req).await;
-        assert!(resp.status().is_success());
+        assert_eq!(resp.status(), 200);
 
         let body = test::read_body(resp).await;
         let response: serde_json::Value =
             serde_json::from_slice(&body).expect("Failed to deserialize response");
-        assert_eq!(response["message"], "Delete activity - TODO: implement");
+        assert_eq!(response["message"], "Activity deleted successfully");
 
         teardown_test_context(ctx).await;
     }

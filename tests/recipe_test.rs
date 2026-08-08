@@ -9,14 +9,15 @@ mod tests {
         pool: PgPool,
         recipe1_id: i32,
         recipe2_id: i32,
-        recipe3_id: i32,
+        _recipe3_id: i32,
     }
 
     async fn create_test_database_pool() -> PgPool {
         dotenv::dotenv().ok();
         let database_url = std::env::var("DATABASE_URL")
-            .expect("DATABASE_URL must be set")
-            .replace("/xnote", "/xnote_test");
+            .expect("DATABASE_URL must be set");
+        let last_slash = database_url.rfind('/').expect("DATABASE_URL must be a valid connection string");
+        let database_url = format!("{}/xnote_test", &database_url[..last_slash]);
         PgPool::connect(&database_url)
             .await
             .expect("Failed to connect to test database")
@@ -65,6 +66,8 @@ mod tests {
 
     async fn setup_test_context() -> TestContext {
         let pool = create_test_database_pool().await;
+        // Drop leftover state from previous runs; init.sql inserts are not idempotent
+        cleanup_database(&pool).await;
         create_schema(&pool).await;
 
         // Insert recipes
@@ -96,7 +99,7 @@ mod tests {
             pool,
             recipe1_id,
             recipe2_id,
-            recipe3_id,
+            _recipe3_id: recipe3_id,
         }
     }
 
@@ -128,7 +131,7 @@ mod tests {
 
         assert_eq!(recipes.len(), 3);
 
-        // Check recipes are ordered by name
+        // Check recipes are ordered by id (insertion order)
         assert_eq!(recipes[0].name, "Pancakes");
         assert_eq!(recipes[1].name, "Pasta");
         assert_eq!(recipes[2].name, "Soup");
@@ -227,7 +230,7 @@ mod tests {
 
     #[actix_web::test]
     #[serial]
-    async fn test_create_recipe_placeholder() {
+    async fn test_create_recipe() {
         let ctx = setup_test_context().await;
 
         let app = test::init_service(
@@ -237,22 +240,32 @@ mod tests {
         )
         .await;
 
-        let req = test::TestRequest::post().uri("/recipes").to_request();
+        let req = test::TestRequest::post()
+            .uri("/recipes")
+            .set_json(&serde_json::json!({
+                "name": "Salad",
+                "ingredients": "lettuce, tomato",
+                "procedure": "chop and toss",
+                "cautions": null
+            }))
+            .to_request();
 
         let resp = test::call_service(&app, req).await;
         assert_eq!(resp.status(), 201);
 
         let body = test::read_body(resp).await;
-        let response: serde_json::Value =
-            serde_json::from_slice(&body).expect("Failed to deserialize response");
-        assert_eq!(response["message"], "Create recipe - TODO: implement");
+        let recipe: xnote::models::recipe::Recipe =
+            serde_json::from_slice(&body).expect("Failed to deserialize recipe");
+        assert_eq!(recipe.name, "Salad");
+        assert_eq!(recipe.ingredients, "lettuce, tomato");
+        assert_eq!(recipe.cautions, None);
 
         teardown_test_context(ctx).await;
     }
 
     #[actix_web::test]
     #[serial]
-    async fn test_update_recipe_placeholder() {
+    async fn test_update_recipe() {
         let ctx = setup_test_context().await;
 
         let app = test::init_service(
@@ -264,22 +277,27 @@ mod tests {
 
         let req = test::TestRequest::put()
             .uri(&format!("/recipes/{}", ctx.recipe1_id))
+            .set_json(&serde_json::json!({
+                "name": "Pancakes Deluxe"
+            }))
             .to_request();
 
         let resp = test::call_service(&app, req).await;
-        assert!(resp.status().is_success());
+        assert_eq!(resp.status(), 200);
 
         let body = test::read_body(resp).await;
-        let response: serde_json::Value =
-            serde_json::from_slice(&body).expect("Failed to deserialize response");
-        assert_eq!(response["message"], "Update recipe - TODO: implement");
+        let recipe: xnote::models::recipe::Recipe =
+            serde_json::from_slice(&body).expect("Failed to deserialize recipe");
+        assert_eq!(recipe.id, ctx.recipe1_id);
+        assert_eq!(recipe.name, "Pancakes Deluxe");
+        assert_eq!(recipe.ingredients, "flour, eggs, milk");
 
         teardown_test_context(ctx).await;
     }
 
     #[actix_web::test]
     #[serial]
-    async fn test_delete_recipe_placeholder() {
+    async fn test_delete_recipe() {
         let ctx = setup_test_context().await;
 
         let app = test::init_service(
@@ -294,12 +312,12 @@ mod tests {
             .to_request();
 
         let resp = test::call_service(&app, req).await;
-        assert!(resp.status().is_success());
+        assert_eq!(resp.status(), 200);
 
         let body = test::read_body(resp).await;
         let response: serde_json::Value =
             serde_json::from_slice(&body).expect("Failed to deserialize response");
-        assert_eq!(response["message"], "Delete recipe - TODO: implement");
+        assert_eq!(response["message"], "Recipe deleted successfully");
 
         teardown_test_context(ctx).await;
     }

@@ -16,8 +16,9 @@ mod tests {
     async fn create_test_database_pool() -> PgPool {
         dotenv::dotenv().ok();
         let database_url = std::env::var("DATABASE_URL")
-            .expect("DATABASE_URL must be set")
-            .replace("/xnote", "/xnote_test");
+            .expect("DATABASE_URL must be set");
+        let last_slash = database_url.rfind('/').expect("DATABASE_URL must be a valid connection string");
+        let database_url = format!("{}/xnote_test", &database_url[..last_slash]);
         PgPool::connect(&database_url)
             .await
             .expect("Failed to connect to test database")
@@ -66,6 +67,8 @@ mod tests {
 
     async fn setup_test_context() -> TestContext {
         let pool = create_test_database_pool().await;
+        // Drop leftover state from previous runs; init.sql inserts are not idempotent
+        cleanup_database(&pool).await;
         create_schema(&pool).await;
 
         // Insert people
@@ -437,7 +440,7 @@ mod tests {
 
     #[actix_web::test]
     #[serial]
-    async fn test_create_drink_placeholder() {
+    async fn test_create_drink() {
         let ctx = setup_test_context().await;
 
         let app = test::init_service(
@@ -447,7 +450,14 @@ mod tests {
         )
         .await;
 
-        let req = test::TestRequest::post().uri("/drinks").to_request();
+        let req = test::TestRequest::post()
+            .uri("/drinks")
+            .set_json(&serde_json::json!({
+                "date": "2024-01-18",
+                "name": "Sip House - Ube Latte",
+                "people_ids": []
+            }))
+            .to_request();
 
         let resp = test::call_service(&app, req).await;
         assert_eq!(resp.status(), 201);
@@ -455,7 +465,8 @@ mod tests {
         let body = test::read_body(resp).await;
         let response: serde_json::Value =
             serde_json::from_slice(&body).expect("Failed to deserialize response");
-        assert_eq!(response["message"], "Create drink - TODO: implement");
+        assert_eq!(response["message"], "Drink created successfully");
+        assert!(response["id"].is_i64());
 
         teardown_test_context(ctx).await;
     }

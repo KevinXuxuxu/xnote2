@@ -18,8 +18,9 @@ mod tests {
     async fn create_test_database_pool() -> PgPool {
         dotenv::dotenv().ok();
         let database_url = std::env::var("DATABASE_URL")
-            .expect("DATABASE_URL must be set")
-            .replace("/xnote", "/xnote_test");
+            .expect("DATABASE_URL must be set");
+        let last_slash = database_url.rfind('/').expect("DATABASE_URL must be a valid connection string");
+        let database_url = format!("{}/xnote_test", &database_url[..last_slash]);
         PgPool::connect(&database_url)
             .await
             .expect("Failed to connect to test database")
@@ -68,6 +69,8 @@ mod tests {
 
     async fn setup_test_context() -> TestContext {
         let pool = create_test_database_pool().await;
+        // Drop leftover state from previous runs; init.sql inserts are not idempotent
+        cleanup_database(&pool).await;
         create_schema(&pool).await;
 
         // Insert people
@@ -525,7 +528,7 @@ mod tests {
 
     #[actix_web::test]
     #[serial]
-    async fn test_create_meal_placeholder() {
+    async fn test_create_meal() {
         let ctx = setup_test_context().await;
 
         let app = test::init_service(
@@ -535,7 +538,20 @@ mod tests {
         )
         .await;
 
-        let req = test::TestRequest::post().uri("/meals").to_request();
+        let req = test::TestRequest::post()
+            .uri("/meals")
+            .set_json(&serde_json::json!({
+                "date": "2024-01-18",
+                "time": "breakfast",
+                "notes": "Test meal",
+                "food_source": {
+                    "type": "recipe",
+                    "recipe_id": ctx.recipe_id,
+                    "meal_type": "cooked"
+                },
+                "people_ids": []
+            }))
+            .to_request();
 
         let resp = test::call_service(&app, req).await;
         assert_eq!(resp.status(), 201);
@@ -543,14 +559,15 @@ mod tests {
         let body = test::read_body(resp).await;
         let response: serde_json::Value =
             serde_json::from_slice(&body).expect("Failed to deserialize response");
-        assert_eq!(response["message"], "Create meal - TODO: implement");
+        assert!(response["id"].is_i64());
+        assert_eq!(response["time"], "breakfast");
 
         teardown_test_context(ctx).await;
     }
 
     #[actix_web::test]
     #[serial]
-    async fn test_update_meal_placeholder() {
+    async fn test_update_meal() {
         let ctx = setup_test_context().await;
 
         let app = test::init_service(
@@ -562,22 +579,34 @@ mod tests {
 
         let req = test::TestRequest::put()
             .uri(&format!("/meals/{}", ctx.meal1_id))
+            .set_json(&serde_json::json!({
+                "date": "2024-01-19",
+                "time": "lunch",
+                "notes": "Updated meal",
+                "food_source": {
+                    "type": "restaurant",
+                    "restaurant_id": ctx.restaurant_id,
+                    "meal_type": "dine-in"
+                },
+                "people_ids": []
+            }))
             .to_request();
 
         let resp = test::call_service(&app, req).await;
-        assert!(resp.status().is_success());
+        assert_eq!(resp.status(), 200);
 
         let body = test::read_body(resp).await;
         let response: serde_json::Value =
             serde_json::from_slice(&body).expect("Failed to deserialize response");
-        assert_eq!(response["message"], "Update meal - TODO: implement");
+        assert_eq!(response["message"], "Meal updated successfully");
+        assert_eq!(response["id"].as_i64().unwrap(), i64::from(ctx.meal1_id));
 
         teardown_test_context(ctx).await;
     }
 
     #[actix_web::test]
     #[serial]
-    async fn test_delete_meal_placeholder() {
+    async fn test_delete_meal() {
         let ctx = setup_test_context().await;
 
         let app = test::init_service(
@@ -592,12 +621,12 @@ mod tests {
             .to_request();
 
         let resp = test::call_service(&app, req).await;
-        assert!(resp.status().is_success());
+        assert_eq!(resp.status(), 200);
 
         let body = test::read_body(resp).await;
         let response: serde_json::Value =
             serde_json::from_slice(&body).expect("Failed to deserialize response");
-        assert_eq!(response["message"], "Delete meal - TODO: implement");
+        assert_eq!(response["message"], "Meal deleted successfully");
 
         teardown_test_context(ctx).await;
     }
